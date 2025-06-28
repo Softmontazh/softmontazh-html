@@ -29,3 +29,32 @@
     /* горизонтальный градиент */
     color: white;
 }
+
+.social-btn {
+    border-width: 1px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+/* Hover эффекты с сохранением фирменных цветов */
+.btn-success:hover {
+    background-color: #28d66c;
+    /* светлее WhatsApp */
+    border-color: #ffffff;
+    color: #fff;
+}
+
+.btn-info:hover {
+    background-color: #33bbff;
+    /* светлее Telegram */
+    border-color: #ffffff;
+    color: #fff;
+}
+
+.btn-dark:hover {
+    background-color: #2b2b2b;
+    /* светлее TikTok */
+    border-color: #ffffff;
+    color: #fff;
+}
