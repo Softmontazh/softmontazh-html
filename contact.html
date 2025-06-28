@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="source/styles/mycss.css">
     <title>СОФТМОНТАЖ</title>
-    <link rel="icon" type="image/png" href="source/files/ico_m.jpg">
+    <link rel="icon" type="image/png" href="source/files/ico_m.png">
     <meta name="description"
         content="ТОО «СОФТМОНТАЖ» — проектирование, монтаж и обслуживание слаботочных систем: видеонаблюдение, сигнализация, домофоны, СКС.">
     <meta name="keywords"
@@ -24,41 +25,105 @@
 </head>
 
 <body>
+    <!-- Offcanvas меню -->
+    <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="mobileMenu"
+        aria-labelledby="mobileMenuLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="mobileMenuLabel">СОФТМОНТАЖ</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+                aria-label="Закрыть"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul class="navbar-nav">
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="index.html">Главная</a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white" href="contact.html">Наши реквизиты</a>
+                </li>
+            </ul>
+            <hr class="text-white">
+            <p>
+                <i class="bi bi-telephone-fill me-1"></i>
+                <a href="tel:+77087553877" class="text-white text-decoration-none">+7 708 755 3877</a><br>
+                <i class="bi bi-envelope-fill me-1"></i>
+                <a href="mailto:info@softmontazh.kz" class="text-white text-decoration-none">info@softmontazh.kz</a>
+            </p>
+            <div class="d-flex gap-2">
+                <a href="https://wa.me/77779000305" target="_blank" class="btn btn-success btn-sm w-100">
+                    <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                </a>
+                <a href="https://t.me/softmontazh" target="_blank" class="btn btn-info text-white btn-sm w-100">
+                    <i class="bi bi-telegram me-1"></i>Telegram
+                </a>
+            </div>
+        </div>
+    </div>
+
     <header>
-        <nav class="navbar navbar-expand-lg custom-navbar text-white">
-            <div class="container-fluid">
-                <a class="navbar-brand text-primary" href="index.html">
-                    <img src="source/files/icon1.png" alt="Brand Icon"></a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Переключатель навигации">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
+        <nav class="navbar navbar-expand-lg custom-navbar text-white bg-dark">
+            <div class="container-fluid d-flex align-items-center">
+
+                <a class="navbar-brand text-primary me-3" href="index.html">
+                    <img src="source/files/icon1.png" alt="Brand Icon" height="40">
+                </a>
+
+                <div class="d-none d-lg-flex align-items-center me-auto">
+                    <ul class="navbar-nav flex-row gap-3" id="main-nav">
                         <li class="nav-item">
-                            <a class="nav-link" aria-current="page" href="index.html">Главная</a>
+                            <a class="nav-link text-black fw-semibold px-0" href="index.html">Главная</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" href="#">Наши реквизиты</a>
+                            <a class="nav-link text-black fw-semibold px-0" href="contact.html">Наши реквизиты</a>
                         </li>
                     </ul>
                 </div>
+
+                <div class="d-none d-lg-flex align-items-center gap-4">
+                    <div class="text-end me-3">
+                        <a href="tel:+77087553877" class="text-white text-decoration-none d-block">
+                            <i class="bi bi-telephone-fill me-1"></i>+7 708 755 3877
+                        </a>
+                        <a href="mailto:info@softmontazh.kz" class="text-white text-decoration-none d-block">
+                            <i class="bi bi-envelope-fill me-1"></i>info@softmontazh.kz
+                        </a>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="https://wa.me/77779000305" target="_blank" class="btn btn-success btn-sm">
+                            <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                        </a>
+                        <a href="https://t.me/softmontazh" target="_blank" class="btn btn-info text-white btn-sm">
+                            <i class="bi bi-telegram me-1"></i>Telegram
+                        </a>
+                        <a href="https://www.tiktok.com/@softmontazh" target="_blank" class="btn btn-dark btn-sm">
+                            <i class="bi bi-tiktok me-1"></i>TikTok
+                        </a>
+                    </div>
+                </div>
+
+                <button class="btn btn-outline-light d-lg-none ms-auto" type="button" data-bs-toggle="offcanvas"
+                    data-bs-target="#mobileMenu" aria-controls="mobileMenu">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
             </div>
         </nav>
     </header>
 
-
-    <section>
-        <div class="container-fluid">
+    <section class="py-5">
+        <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-6">
                     <div class="card shadow-sm">
-                        <img src="source/images/img001.png" class="card-img-top" alt="img001">
+                        <video class="card-img-top w-100" poster="source/files/min_logo.mp4" controls autoplay loop
+                            muted playsinline>
+                            <source src="source/files/min_logo.mp4" type="video/mp4">
+                            Ваш браузер не поддерживает воспроизведение видео.
+                        </video>
+
                         <div class="card-body">
                             <h5 class="card-title">Реквизиты</h5>
                             <p class="card-text mb-1">ТОО «СОФТМОНТАЖ»</p>
                             <p class="card-text mb-1">БИН: 250640009719</p>
-
                             <p class="card-text mb-1">
                                 📞 <a href="#" onclick="copyPhone('+77087553877'); return false;">+7 (708) 755-38-77</a>
                             </p>
@@ -67,26 +132,6 @@
                             </p>
                             <button class="btn btn-outline-primary w-100" onclick="copyAllDetails()">Скопировать все
                                 реквизиты</button>
-                            <script>
-                                function copyAllDetails() {
-                                    const details = [
-                                        'ТОО «СОФТМОНТАЖ»',
-                                        'БИН: 250640009719',
-                                        'Телефон: +7 (708) 755-38-77',
-                                        'E-mail: info@softmontazh.kz'
-                                    ].join('\n');
-                                    navigator.clipboard.writeText(details).then(() => {
-                                        const toastEl = document.getElementById('phoneToast');
-                                        const toastBody = toastEl.querySelector('.toast-body');
-                                        toastBody.textContent = 'Реквизиты скопированы в буфер обмена';
-                                        const toast = new bootstrap.Toast(toastEl);
-                                        toast.show();
-                                        setTimeout(() => { toastBody.textContent = 'Телефон скопирован в буфер обмена'; }, 2000);
-                                    }).catch(err => {
-                                        console.error("Ошибка копирования: ", err);
-                                    });
-                                }
-                            </script>
                         </div>
                     </div>
                 </div>
@@ -98,39 +143,58 @@
             <div id="phoneToast" class="toast align-items-center text-white bg-success border-0" role="alert"
                 aria-live="assertive" aria-atomic="true">
                 <div class="d-flex">
-                    <div class="toast-body">
-                        Телефон скопирован в буфер обмена
-                    </div>
+                    <div class="toast-body">Телефон скопирован в буфер обмена</div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
                         aria-label="Close"></button>
                 </div>
             </div>
         </div>
-
-        <!-- Script -->
-        <script>
-            function copyPhone(phone) {
-                navigator.clipboard.writeText(phone).then(() => {
-                    const toastEl = document.getElementById('phoneToast');
-                    const toast = new bootstrap.Toast(toastEl);
-                    toast.show();
-                }).catch(err => {
-                    console.error("Ошибка копирования: ", err);
-                });
-            }
-        </script>
     </section>
 
-
-
-    <footer>
-
+    <footer class="bg-dark text-white text-center py-3">
+        <p class="mb-0" style="font-size: 0.5rem;">© 2025 ТОО «СОФТМОНТАЖ». Все права защищены.</p>
     </footer>
 
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+    <script>
+        function copyAllDetails() {
+            const details = [
+                'ТОО «СОФТМОНТАЖ»',
+                'БИН: 250640009719',
+                'Телефон: +7 (708) 755-38-77',
+                'E-mail: info@softmontazh.kz'
+            ].join('\n');
+            navigator.clipboard.writeText(details).then(() => {
+                const toastEl = document.getElementById('phoneToast');
+                const toastBody = toastEl.querySelector('.toast-body');
+                toastBody.textContent = 'Реквизиты скопированы в буфер обмена';
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+                setTimeout(() => { toastBody.textContent = 'Телефон скопирован в буфер обмена'; }, 2000);
+            }).catch(err => console.error("Ошибка копирования: ", err));
+        }
+
+        function copyPhone(phone) {
+            navigator.clipboard.writeText(phone).then(() => {
+                const toastEl = document.getElementById('phoneToast');
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }).catch(err => console.error("Ошибка копирования: ", err));
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentPath = window.location.pathname.split("/").pop();
+            const navLinks = document.querySelectorAll("#main-nav .nav-link");
+            navLinks.forEach(link => {
+                const linkPath = link.getAttribute("href");
+                if (linkPath === currentPath || (linkPath === "index.html" && currentPath === "")) {
+                    link.classList.add("active");
+                }
+            });
+        });
+    </script>
 </body>
+
 
 </html>
