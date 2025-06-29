@@ -58,3 +58,20 @@
     border-color: #ffffff;
     color: #fff;
 }
+
+/* .list-group-item {
+    background-color: transparent;
+    border: none;
+    padding-left: 0;
+    color: #000;
+} */
+
+ul.feature-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+    background: none;
+}
+
+ul.feature-list li:last-child {
+    border-bottom: none;
+}
