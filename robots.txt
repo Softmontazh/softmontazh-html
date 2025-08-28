@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://softmontazh.kz/sitemap.xml
