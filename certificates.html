@@ -30,8 +30,12 @@
         }
         .certificate-img {
             width: 100%;
+            max-width: 700px;
+            max-height: 55vh;
             border-radius: 6px;
             margin-bottom: 12px;
+            object-fit: contain;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.10);
         }
         .certificate-caption {
             font-size: 1.1em;
@@ -141,55 +145,75 @@
     <!-- Основной контент -->
     <section class="py-5 bg-light">
         <div class="container">
-            <div class="certificates-title">Сертификаты</div>
-            <div class="certificates-list">
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan RSE SMB Product.png" alt="RSE SMB Product Certificate" class="certificate-img">
-                    <div class="certificate-caption">
-                        Сертифицированный специалист Ruijie
+            <div class="certificates-title mb-4">Сертификаты</div>
+            <div id="certificatesCarousel" class="carousel slide carousel-dark" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan RSE SMB Product.png" class="certificate-img mb-3" alt="RSE SMB Product Certificate">
+                            <div class="certificate-caption">Сертифицированный специалист Ruijie</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan CIS CCTV PoP.png" class="certificate-img mb-3" alt="CIS SMB CCTV Solution">
+                            <div class="certificate-caption">Решения для видеонаблюдения малого и среднего бизнеса</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan CIS Office PoP.png" class="certificate-img mb-3" alt="CIS SMB Office Solution">
+                            <div class="certificate-caption">Офисные IT-решения для малого и среднего бизнеса</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan HCSA-Maintenance.png" class="certificate-img mb-3" alt="HCSA-Maintenance">
+                            <div class="certificate-caption">Послепродажное обслуживание Hikvision</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan HCSA-SaaS.png" class="certificate-img mb-3" alt="HCSA-SaaS">
+                            <div class="certificate-caption">Программное обеспечение Hikvision</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan HCSA-CCTV PoP.png" class="certificate-img mb-3" alt="HCSA-CCTV PoP">
+                            <div class="certificate-caption">Видеонаблюдение Hikvision</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan HCSA-Display.png" class="certificate-img mb-3" alt="HCSA-Display">
+                            <div class="certificate-caption">Дисплеи Hikvision</div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="d-flex flex-column align-items-center">
+                            <img src="source/images/Alexandr Khvan CGSA-Access Control.png" class="certificate-img mb-3" alt="CGSA-Access Control">
+                            <div class="certificate-caption">Контроль доступа Hikvision</div>
+                        </div>
                     </div>
                 </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan CIS CCTV PoP.png" alt="CIS SMB CCTV Solution" class="certificate-img">
-                    <div class="certificate-caption">
-                        Решения для видеонаблюдения малого и среднего бизнеса
-                    </div>
-                </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan CIS Office PoP.png" alt="CIS SMB Office Solution" class="certificate-img">
-                    <div class="certificate-caption">
-                        Офисные IT-решения для малого и среднего бизнеса
-                    </div>
-                </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan HCSA-Maintenance.png" alt="HCSA-Maintenance" class="certificate-img">
-                    <div class="certificate-caption">
-                        Послепродажное обслуживание Hikvision
-                    </div>
-                </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan HCSA-SaaS.png" alt="HCSA-SaaS" class="certificate-img">
-                    <div class="certificate-caption">
-                        Программное обеспечение Hikvision
-                    </div>
-                </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan HCSA-CCTV PoP.png" alt="HCSA-CCTV PoP" class="certificate-img">
-                    <div class="certificate-caption">
-                        Видеонаблюдение Hikvision
-                    </div>
-                </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan HCSA-Display.png" alt="HCSA-Display" class="certificate-img">
-                    <div class="certificate-caption">
-                        Дисплеи Hikvision
-                    </div>
-                </div>
-                <div class="certificate-item">
-                    <img src="source/images/Alexandr Khvan CGSA-Access Control.png" alt="CGSA-Access Control" class="certificate-img">
-                    <div class="certificate-caption">
-                        Контроль доступа Hikvision
-                    </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#certificatesCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Предыдущий</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#certificatesCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Следующий</span>
+                </button>
+                <div class="carousel-indicators mt-3">
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Слайд 1"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="1" aria-label="Слайд 2"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="2" aria-label="Слайд 3"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="3" aria-label="Слайд 4"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="4" aria-label="Слайд 5"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="5" aria-label="Слайд 6"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="6" aria-label="Слайд 7"></button>
+                    <button type="button" data-bs-target="#certificatesCarousel" data-bs-slide-to="7" aria-label="Слайд 8"></button>
                 </div>
             </div>
         </div>
