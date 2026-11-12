@@ -1,8 +1,8 @@
 /* Софтмонтаж — общие шапка/подвал и мелкие функции.
    Меню и контакты правятся здесь, в одном месте, для всех страниц. */
 (function () {
-  const PHONE = "+7 708 755 3877";
-  const PHONE_HREF = "tel:+77087553877";
+  const PHONE = "+7 775 325 9692";
+  const PHONE_HREF = "tel:+77753259692";
   const EMAIL = "info@softmontazh.kz";
   const WA = "https://wa.me/77779000305?text=" + encodeURIComponent("Здравствуйте! Хочу обсудить объект.");
   const TG = "https://t.me/softmontazh";
