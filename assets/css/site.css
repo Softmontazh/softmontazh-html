@@ -221,3 +221,20 @@ a.card { text-decoration: none; color: inherit; }
 .esemer-slot--hero:not(.has-card) { position: absolute; width: 420px; visibility: hidden; pointer-events: none; }
 .esemer-slot--hero { justify-content: flex-end; }
 @media (max-width: 960px) { .esemer-slot--hero { justify-content: flex-start; } }
+
+/* Блок «Видите ход работ без звонков» */
+.muted-note { color: var(--sm-muted); font-size: 15px; }
+.muted-note a { color: var(--sm-indigo); font-weight: 500; }
+.access-box { background: #fff; border: 1px solid #E6E8F2; border-radius: 24px; padding: 28px; box-shadow: 0 14px 40px rgba(46, 58, 140, .08); }
+.access-box__head { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; margin-bottom: 6px; border-bottom: 1px solid #F0F1F6; }
+.access-box__head img { width: 52px; height: 52px; }
+.access-box__head b { display: block; font-size: 20px; color: var(--sm-indigo); }
+.access-box__head small { color: var(--sm-muted); font-size: 14px; }
+.access-list { list-style: none; padding: 0; margin: 0; }
+.access-list li { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid #F0F1F6; }
+.access-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.access-list b { display: block; color: var(--sm-text); font-weight: 600; }
+.access-list span:not(.access-ico) { color: var(--sm-muted); font-size: 14.5px; }
+.access-ico { width: 42px; height: 42px; flex: none; border-radius: 12px; background: var(--sm-tile); display: grid; place-items: center; color: var(--sm-indigo); }
+.access-ico svg { width: 20px; height: 20px; }
+.access-list li:first-child .access-ico { background: #FFF1E4; color: var(--sm-orange-btn); }
