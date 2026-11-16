@@ -32,6 +32,11 @@ class SiteSettings(models.Model):
         default="https://b2b.barlau.kz/upload/tmp/sotbit_b2bcabinet_blank/excelExportApi.xlsx")
     yml_url = models.URLField("Ссылка на YML-выгрузку Barlau", max_length=300,
         default="https://b2b.barlau.kz/bitrix/catalog_export/export_p2P.xml")
+    manager_name = models.CharField("Менеджер — имя", max_length=80, default="Александр", blank=True)
+    manager_phone = models.CharField("Менеджер — телефон для звонков", max_length=30, default="+7 708 755 3877",
+        help_text="Ставится во все кнопки «Позвонить» и телефон в шапке/подвале сайта.")
+    manager_whatsapp = models.CharField("Менеджер — WhatsApp", max_length=30, default="+7 777 900 0305",
+        help_text="Номер для кнопок «Написать в WhatsApp» и «Заказать в WhatsApp».")
     import_requested = models.BooleanField("Запрошено обновление вручную", default=False, editable=False)
 
     class Meta:
@@ -48,6 +53,21 @@ class SiteSettings(models.Model):
     def get(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    @staticmethod
+    def _digits(phone):
+        d = "".join(ch for ch in phone if ch.isdigit())
+        if len(d) == 11 and d[0] == "8":
+            d = "7" + d[1:]
+        return d
+
+    @property
+    def tel(self):
+        return "tel:+" + self._digits(self.manager_phone)
+
+    @property
+    def wa(self):
+        return "https://wa.me/" + self._digits(self.manager_whatsapp)
 
 
 class Brand(models.Model):

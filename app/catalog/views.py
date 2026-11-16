@@ -9,7 +9,6 @@ from django.views.decorators.cache import cache_control
 from .models import Brand, Node, Product, SiteSettings
 
 PAGE = 24
-WA = "https://wa.me/77779000305"
 
 
 def _item(p):
@@ -71,9 +70,18 @@ def catalog_page(request):
     s = SiteSettings.get()
     menu = _menu(s)
     return render(request, "catalog/list.html", {
+        "s": s,
         "menu_json": json.dumps(menu, ensure_ascii=False).replace("</", "<\\/"),
         "total": sum(b["count"] for b in menu),
     })
+
+
+@cache_control(max_age=60, public=True)
+def api_contacts(request):
+    """Контакты менеджера для статических страниц сайта (site.js подставляет их в ссылки)."""
+    s = SiteSettings.get()
+    return JsonResponse({"name": s.manager_name, "phone": s.manager_phone, "tel": s.tel,
+                         "whatsapp": s.manager_whatsapp, "wa": s.wa})
 
 
 @cache_control(max_age=60, public=True)
@@ -144,5 +152,5 @@ def product_page(request, slug):
     if not crumbs and p.category:
         crumbs = [(p.category.name, f"/catalog/?brand={p.brand.slug}&cat={p.category.slug}")]
     return render(request, "catalog/product.html", {
-        "p": p, "crumbs": crumbs, "s": s, "specs": specs, "wa": f"{WA}?text={quote(msg)}", "related": [_item(r) for r in related],
+        "p": p, "crumbs": crumbs, "s": s, "specs": specs, "wa": f"{s.wa}?text={quote(msg)}", "related": [_item(r) for r in related],
     })

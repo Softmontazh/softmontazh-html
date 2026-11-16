@@ -1,8 +1,8 @@
 /* Софтмонтаж — общие шапка/подвал и мелкие функции.
    Меню и контакты правятся здесь, в одном месте, для всех страниц. */
 (function () {
-  const PHONE = "+7 775 325 9692";
-  const PHONE_HREF = "tel:+77753259692";
+  const PHONE = "+7 708 755 3877";
+  const PHONE_HREF = "tel:+77087553877";
   const EMAIL = "info@softmontazh.kz";
   const WA = "https://wa.me/77779000305?text=" + encodeURIComponent("Здравствуйте! Хочу обсудить объект.");
   const TG = "https://t.me/softmontazh";
@@ -95,6 +95,22 @@
     if (/^https?:/.test(v)) { a.target = "_blank"; a.rel = "noopener"; }
   });
   document.querySelectorAll("[data-icon]").forEach((el) => { el.insertAdjacentHTML("afterbegin", ICON[el.dataset.icon] || ""); });
+
+  // контакты менеджера из админки каталога (раздел «Настройки каталога → Менеджер»): телефон и WhatsApp во всех ссылках
+  window.SM = { phone: PHONE, tel: PHONE_HREF, wa: WA.split("?")[0] };
+  function applyContacts(c) {
+    if (!c || !c.tel || !c.wa) return;
+    document.querySelectorAll('a[href^="tel:"]').forEach((a) => {
+      if (a.getAttribute("href") !== PHONE_HREF) return;
+      a.href = c.tel;
+      a.childNodes.forEach((n) => { if (n.nodeType === 3 && n.nodeValue.includes(PHONE)) n.nodeValue = n.nodeValue.replace(PHONE, c.phone); });
+    });
+    document.querySelectorAll('a[href^="https://wa.me/"]').forEach((a) => { a.href = a.href.replace(/^https:\/\/wa\.me\/\d+/, c.wa); });
+    window.SM = { phone: c.phone, tel: c.tel, wa: c.wa, name: c.name };
+  }
+  if (location.protocol !== "file:") {
+    fetch("/api/site/contacts").then((r) => (r.ok ? r.json() : null)).then(applyContacts).catch(() => {});
+  }
 
   // мобильное меню
   const burger = document.querySelector(".burger");

@@ -108,7 +108,7 @@
       $("count").textContent = `${d.total.toLocaleString("ru-RU")} ${plural(d.total, ["товар", "товара", "товаров"])}`;
       const html = d.items.map(card).join("");
       if (append) $("grid").insertAdjacentHTML("beforeend", html);
-      else $("grid").innerHTML = html || `<div class="cat-empty">Ничего не нашли. Напишите нам — подберём аналог или привезём под заказ.<br><br><a class="btn btn--accent btn--sm" href="https://wa.me/77779000305" target="_blank" rel="noopener">Написать в WhatsApp</a></div>`;
+      else $("grid").innerHTML = html || `<div class="cat-empty">Ничего не нашли. Напишите нам — подберём аналог или привезём под заказ.<br><br><a class="btn btn--accent btn--sm" href="${(window.SM && window.SM.wa) || "https://wa.me/77779000305"}" target="_blank" rel="noopener">Написать в WhatsApp</a></div>`;
       $("more").hidden = d.page >= d.pages;
     } catch (e) {
       if (my === req) $("grid").innerHTML = `<div class="cat-empty">Каталог временно не загрузился. Обновите страницу или напишите нам в WhatsApp.</div>`;
