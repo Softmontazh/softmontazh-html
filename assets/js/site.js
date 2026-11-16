@@ -96,20 +96,33 @@
   });
   document.querySelectorAll("[data-icon]").forEach((el) => { el.insertAdjacentHTML("afterbegin", ICON[el.dataset.icon] || ""); });
 
-  // контакты менеджера из админки каталога (раздел «Настройки каталога → Менеджер»): телефон и WhatsApp во всех ссылках
-  window.SM = { phone: PHONE, tel: PHONE_HREF, wa: WA.split("?")[0] };
+  // контакты менеджера из админки каталога (Настройки каталога → «Менеджер»): телефон и WhatsApp во всех ссылках.
+  // Последние контакты запоминаются в браузере и ставятся сразу, чтобы старый номер не мелькал.
+  let cur = { phone: PHONE, tel: PHONE_HREF, wa: WA.split("?")[0] };
+  window.SM = Object.assign({ show_phone: true }, cur);
   function applyContacts(c) {
-    if (!c || !c.tel || !c.wa) return;
+    if (!c || !c.wa) return;
     document.querySelectorAll('a[href^="tel:"]').forEach((a) => {
-      if (a.getAttribute("href") !== PHONE_HREF) return;
+      if (c.show_phone === false || !c.tel) {
+        const li = a.closest("li");
+        (li && li.querySelectorAll("a").length === 1 ? li : a).style.display = "none";
+        return;
+      }
+      if (a.getAttribute("href") !== cur.tel) return;
       a.href = c.tel;
-      a.childNodes.forEach((n) => { if (n.nodeType === 3 && n.nodeValue.includes(PHONE)) n.nodeValue = n.nodeValue.replace(PHONE, c.phone); });
+      a.childNodes.forEach((n) => { if (n.nodeType === 3 && n.nodeValue.includes(cur.phone)) n.nodeValue = n.nodeValue.replace(cur.phone, c.phone); });
     });
     document.querySelectorAll('a[href^="https://wa.me/"]').forEach((a) => { a.href = a.href.replace(/^https:\/\/wa\.me\/\d+/, c.wa); });
-    window.SM = { phone: c.phone, tel: c.tel, wa: c.wa, name: c.name };
+    cur = { phone: c.phone || cur.phone, tel: c.tel || cur.tel, wa: c.wa };
+    window.SM = Object.assign({}, c);
   }
   if (location.protocol !== "file:") {
-    fetch("/api/site/contacts").then((r) => (r.ok ? r.json() : null)).then(applyContacts).catch(() => {});
+    try { applyContacts(JSON.parse(localStorage.getItem("sm_contacts") || "null")); } catch (e) { /* нет хранилища */ }
+    fetch("/api/site/contacts").then((r) => (r.ok ? r.json() : null)).then((c) => {
+      if (!c) return;
+      applyContacts(c);
+      try { localStorage.setItem("sm_contacts", JSON.stringify(c)); } catch (e) { /* нет хранилища */ }
+    }).catch(() => {});
   }
 
   // мобильное меню

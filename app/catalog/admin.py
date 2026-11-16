@@ -9,7 +9,7 @@ from .models import Brand, Category, ImportRun, Product, SiteSettings, recalc_pr
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     fieldsets = [
-        ("Менеджер", {"fields": ["manager_name", "manager_phone", "manager_whatsapp"],
+        ("Менеджер", {"fields": ["manager_name", "show_phone", "manager_phone", "manager_whatsapp"],
                       "description": "Контакты для покупателей: подставляются в кнопки звонка и WhatsApp на всём сайте (обновление — в течение минуты)."}),
         ("Цены", {"fields": ["markup_percent", "round_to", "price_note"]}),
         ("Что показывать", {"fields": ["show_without_price", "show_out_of_stock"]}),

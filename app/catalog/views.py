@@ -80,7 +80,8 @@ def catalog_page(request):
 def api_contacts(request):
     """Контакты менеджера для статических страниц сайта (site.js подставляет их в ссылки)."""
     s = SiteSettings.get()
-    return JsonResponse({"name": s.manager_name, "phone": s.manager_phone, "tel": s.tel,
+    return JsonResponse({"name": s.manager_name, "show_phone": s.phone_visible,
+                         "phone": s.manager_phone if s.phone_visible else "", "tel": s.tel,
                          "whatsapp": s.manager_whatsapp, "wa": s.wa})
 
 

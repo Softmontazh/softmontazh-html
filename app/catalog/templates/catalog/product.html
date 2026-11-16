@@ -31,9 +31,9 @@
           <p class="pp__note">{% if p.price %}{{ s.price_note }}{% else %}Уточним цену и срок поставки в течение дня.{% endif %}</p>
           <div class="pp__actions">
             <a class="btn btn--accent" href="{{ wa }}" target="_blank" rel="noopener">Заказать в WhatsApp</a>
-            <a class="btn btn--outline" href="{{ s.tel }}">Позвонить</a>
+            {% if s.phone_visible %}<a class="btn btn--outline" href="{{ s.tel }}">Позвонить</a>{% endif %}
           </div>
-          {% if s.manager_name %}<p class="pp__manager">Ваш менеджер — <b>{{ s.manager_name }}</b>, <a href="{{ s.tel }}">{{ s.manager_phone }}</a></p>{% endif %}
+          {% if s.manager_name %}<p class="pp__manager">Ваш менеджер — <b>{{ s.manager_name }}</b>{% if s.phone_visible %}, <a href="{{ s.tel }}">{{ s.manager_phone }}</a>{% else %}, ответит в WhatsApp{% endif %}</p>{% endif %}
           <table class="pm__specs pp__facts">
             {% if p.category %}<tr><td>Раздел</td><td>{{ p.category.name }}{% if p.subpath %} › {{ p.subpath }}{% endif %}</td></tr>{% endif %}
             {% if p.warranty %}<tr><td>Гарантия</td><td>{{ p.warranty }}</td></tr>{% endif %}

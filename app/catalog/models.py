@@ -33,7 +33,9 @@ class SiteSettings(models.Model):
     yml_url = models.URLField("Ссылка на YML-выгрузку Barlau", max_length=300,
         default="https://b2b.barlau.kz/bitrix/catalog_export/export_p2P.xml")
     manager_name = models.CharField("Менеджер — имя", max_length=80, default="Александр", blank=True)
-    manager_phone = models.CharField("Менеджер — телефон для звонков", max_length=30, default="+7 708 755 3877",
+    show_phone = models.BooleanField("Показывать телефон для звонков", default=True,
+        help_text="Снимите галочку — с сайта уберутся телефон и кнопки «Позвонить», заявки останутся только через WhatsApp.")
+    manager_phone = models.CharField("Менеджер — телефон для звонков", max_length=30, default="+7 708 755 3877", blank=True,
         help_text="Ставится во все кнопки «Позвонить» и телефон в шапке/подвале сайта.")
     manager_whatsapp = models.CharField("Менеджер — WhatsApp", max_length=30, default="+7 777 900 0305",
         help_text="Номер для кнопок «Написать в WhatsApp» и «Заказать в WhatsApp».")
@@ -62,8 +64,12 @@ class SiteSettings(models.Model):
         return d
 
     @property
+    def phone_visible(self):
+        return self.show_phone and bool(self._digits(self.manager_phone))
+
+    @property
     def tel(self):
-        return "tel:+" + self._digits(self.manager_phone)
+        return ("tel:+" + self._digits(self.manager_phone)) if self.phone_visible else ""
 
     @property
     def wa(self):
