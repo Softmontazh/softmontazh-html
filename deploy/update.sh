@@ -10,7 +10,9 @@
 #   3) пишет файл VERSION (дата · короткий хеш), наружу он не отдаётся;
 #   4) если deploy/nginx.conf отличается от /etc/nginx/sites-available/softmontazh.kz —
 #      ставит новый конфиг (старый сохраняет рядом как .bak-ДАТА), проверяет nginx -t и перезагружает nginx;
-#      если проверка не прошла — возвращает старый конфиг и nginx не трогает.
+#      если проверка не прошла — возвращает старый конфиг и nginx не трогает;
+#   5) каталог (если установлен deploy/catalog-install.sh): бэкап базы → зависимости (если менялись) →
+#      миграции → статика админки → перезапуск сервиса softmontazh → проверка, что отвечает.
 set -euo pipefail
 
 SITE_DIR="/var/www/softmontazh.kz"
@@ -60,6 +62,41 @@ apply_nginx() {
   fi
 }
 
+# --- каталог (Django) ---
+CAT_HOME="/opt/softmontazh"
+
+apply_catalog() {
+  if [[ ! -x "$CAT_HOME/venv/bin/python" ]]; then
+    if [[ -f "$SITE_DIR/app/manage.py" ]]; then
+      echo "Каталог: ещё не установлен — один раз выполните: sudo bash $SITE_DIR/deploy/catalog-install.sh"
+    fi
+    return 0
+  fi
+  echo "Каталог: обновляю…"
+  local ts; ts="$(date '+%Y%m%d-%H%M%S')"
+  sudo -u softmontazh pg_dump -Fc softmontazh > "$CAT_HOME/backups/pre-update-$ts.dump" && chown softmontazh: "$CAT_HOME/backups/pre-update-$ts.dump"
+  ls -1t "$CAT_HOME"/backups/pre-update-*.dump 2>/dev/null | tail -n +6 | xargs -r rm -f
+  local h; h="$(sha256sum "$SITE_DIR/app/requirements.txt" | cut -d' ' -f1)"
+  if [[ "$h" != "$(cat "$CAT_HOME/.req-hash" 2>/dev/null)" ]]; then
+    sudo -u softmontazh "$CAT_HOME/venv/bin/pip" install -q -r "$SITE_DIR/app/requirements.txt" && echo "$h" > "$CAT_HOME/.req-hash"
+  fi
+  install -m 755 "$SITE_DIR/deploy/softmontazh-manage" /usr/local/bin/softmontazh-manage
+  if ! cmp -s "$SITE_DIR/deploy/softmontazh.service" /etc/systemd/system/softmontazh.service; then
+    install -m 644 "$SITE_DIR/deploy/softmontazh.service" /etc/systemd/system/softmontazh.service && systemctl daemon-reload
+  fi
+  cmp -s "$SITE_DIR/deploy/softmontazh-catalog.cron" /etc/cron.d/softmontazh-catalog || install -m 644 "$SITE_DIR/deploy/softmontazh-catalog.cron" /etc/cron.d/softmontazh-catalog
+  softmontazh-manage migrate --noinput
+  softmontazh-manage collectstatic --noinput -v0
+  systemctl restart softmontazh
+  sleep 3
+  if curl -fsS -o /dev/null http://127.0.0.1:8002/api/catalog/menu; then
+    echo "Каталог: работает (бэкап перед обновлением — $CAT_HOME/backups/pre-update-$ts.dump)."
+  else
+    echo "Каталог: НЕ ОТВЕЧАЕТ после обновления. Журнал: journalctl -u softmontazh -n 50. Откат: sudo bash $SITE_DIR/deploy/update.sh --rollback" >&2
+    return 1
+  fi
+}
+
 write_version() {
   local short; short="$(g rev-parse --short HEAD)"
   echo "$(now) · $short" > "$SITE_DIR/VERSION"
@@ -84,6 +121,7 @@ if [[ "${1:-}" == "--rollback" ]]; then
   g reset --hard "$target"
   echo "$(now) · было $before · стало $(g rev-parse HEAD) · откат" >> "$LOG"
   apply_nginx || true
+  apply_catalog || true
   write_version
   exit 0
 fi
@@ -100,4 +138,5 @@ else
 fi
 
 apply_nginx || echo "Внимание: сайт обновлён, но новый конфиг nginx не применён (см. ошибку выше)." >&2
+apply_catalog || echo "Внимание: сайт обновлён, но каталог после обновления не отвечает (см. выше)." >&2
 write_version

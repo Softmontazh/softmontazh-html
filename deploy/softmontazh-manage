@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Команды Django каталога от нужного пользователя и с настройками сервера.
+#   sudo softmontazh-manage createsuperuser     — завести вход в админку
+#   sudo softmontazh-manage changepassword ИМЯ  — сменить пароль
+#   sudo softmontazh-manage import_barlau       — загрузить каталог из Barlau сейчас
+set -euo pipefail
+if [[ "$(id -un)" != "softmontazh" ]]; then exec sudo -u softmontazh -H "$0" "$@"; fi
+set -a; source /opt/softmontazh/.env; set +a
+cd /var/www/softmontazh.kz/app
+exec /opt/softmontazh/venv/bin/python manage.py "$@"

@@ -194,3 +194,7 @@ cython_debug/
 .cursorindexingignore
 # Сайт: служебный файл версии на сервере (пишет deploy/update.sh)
 VERSION
+# Каталог: локальные файлы разработки
+app/db.sqlite3
+app/_static/
+app/_data/

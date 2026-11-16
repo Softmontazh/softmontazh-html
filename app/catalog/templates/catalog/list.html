@@ -1,0 +1,56 @@
+{% extends "catalog/base.html" %}
+{% block main %}
+  <section class="page-head cat-head">
+    <div class="container">
+      <h1>Каталог оборудования</h1>
+      <p>Видеонаблюдение, домофоны, СКУД, сигнализация и сетевое оборудование. Цены в тенге, наличие на складе в Казахстане. Подберём, привезём и смонтируем.</p>
+      <form class="cat-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Модель, артикул или тип: DS-2CD1043, домофон, PoE коммутатор" autocomplete="off" aria-label="Поиск по каталогу">
+      </form>
+    </div>
+  </section>
+
+  <section class="section cat-section">
+    <nav class="cat-sub" id="sub" aria-label="Бренды и разделы">
+      <div class="cat-sub__row">
+        <button class="cat-bbtn" id="bbtn" type="button" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <span id="bbtnLabel">Все бренды</span>
+        </button>
+        <div class="cat-chips" id="subCats"></div>
+      </div>
+      <div class="cat-bmenu" id="bmenu" hidden><div id="subBrands"></div></div>
+    </nav>
+    <div class="container cat-layout">
+      <aside class="cat-side" id="side">
+        <div class="cat-side__block">
+          <div class="cat-side__title">Бренды</div>
+          <div id="brands"></div>
+        </div>
+        <div class="cat-side__block">
+          <div class="cat-side__title">Раздел</div>
+          <div id="cats"></div>
+        </div>
+      </aside>
+      <div class="cat-main">
+        <div class="cat-toolbar">
+          <div class="cat-count" id="count" aria-live="polite"></div>
+          <label class="cat-switch"><input type="checkbox" id="instock"> <span>Только в наличии</span></label>
+          <select id="sort" class="cat-select" aria-label="Сортировка">
+            <option value="pop">Сначала в наличии</option>
+            <option value="asc">Сначала дешевле</option>
+            <option value="desc">Сначала дороже</option>
+            <option value="name">По модели</option>
+          </select>
+        </div>
+        <div class="cat-grid" id="grid"></div>
+        <div class="cat-more"><button class="btn btn--outline" id="more" type="button" hidden>Показать ещё</button></div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script>window.CATALOG_MENU = {{ menu_json|safe }};</script>
+  <script src="/assets/js/catalog.js?v=1"></script>
+{% endblock %}

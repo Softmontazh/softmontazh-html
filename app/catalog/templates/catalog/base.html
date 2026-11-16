@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Каталог оборудования — Софтмонтаж{% endblock %}</title>
+  <meta name="description" content="{% block description %}Каталог оборудования Hikvision, Ruijie, HiWatch, Ezviz и других брендов: камеры, регистраторы, домофоны, СКУД, коммутаторы. Цены в тенге, наличие на складе в Казахстане.{% endblock %}">
+  <link rel="canonical" href="https://softmontazh.kz{{ request.path }}">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#2E3A8C">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="Софтмонтаж">
+  <meta property="og:title" content="{% block og_title %}Каталог оборудования — Софтмонтаж{% endblock %}">
+  <meta property="og:url" content="https://softmontazh.kz{{ request.path }}">
+  <meta property="og:image" content="{% block og_image %}https://softmontazh.kz/brand/social/softmontazh-og-1200x630-ru.png{% endblock %}">
+  <link rel="icon" href="/brand/favicon/favicon.ico" sizes="any">
+  <link rel="icon" href="/brand/favicon/softmontazh-favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/brand/logo/softmontazh-icon-180.png">
+  <link rel="manifest" href="/brand/site/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/brand/site/colors.css?v=1">
+  <link rel="stylesheet" href="/assets/css/site.css?v=3">
+  <link rel="stylesheet" href="/assets/css/catalog.css?v=1">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main>{% block main %}{% endblock %}</main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/assets/js/site.js?v=5"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

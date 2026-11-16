@@ -15,6 +15,7 @@
   const NAV = [
     ["index.html", "Главная"],
     ["services.html", "Услуги"],
+    ["catalog/", "Каталог"],
     ["certificates.html", "Сертификаты"],
     ["contact.html", "Контакты"],
   ];
@@ -29,6 +30,7 @@
 
   let here = (location.pathname.split("/").pop() || "index.html").toLowerCase();
   if (!here.includes(".")) here += ".html"; // адреса без .html: /services → services.html
+  if (/^\/catalog(\/|$)/.test(location.pathname)) here = "catalog/"; // каталог и карточки товаров
   const navLinks = (cls) => NAV.map(([href, label]) =>
     `<a class="${cls}${href === here ? " is-active" : ""}" href="${B}${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
 

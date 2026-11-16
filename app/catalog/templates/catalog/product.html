@@ -1,0 +1,72 @@
+{% extends "catalog/base.html" %}{% load catalog_tags %}
+{% block title %}{{ p.brand.name }} {{ p.title }}{% if p.type %} — {{ p.type }}{% endif %} | Софтмонтаж{% endblock %}
+{% block description %}{{ p.brand.name }} {{ p.title }}{% if p.type %}, {{ p.type|lower }}{% endif %}.{% if p.price %} Цена {{ p.price|money }}.{% endif %} {{ p.stock_text }}. Поставка и монтаж — Софтмонтаж, Караганда.{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ p.brand.name }} {{ p.title }}{% endblock %}
+{% block og_image %}{% if p.image_url %}{{ p.image_url }}{% else %}https://softmontazh.kz/brand/social/softmontazh-og-1200x630-ru.png{% endif %}{% endblock %}
+{% block head %}
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"{{ p.brand.name|escapejs }} {{ p.title|escapejs }}","brand":{"@type":"Brand","name":"{{ p.brand.name|escapejs }}"},"sku":"{{ p.article|escapejs }}"{% if p.image_url %},"image":"{{ p.image_url|escapejs }}"{% endif %}{% if p.price %},"offers":{"@type":"Offer","priceCurrency":"KZT","price":"{{ p.price }}","availability":"https://schema.org/{% if p.stock %}InStock{% else %}PreOrder{% endif %}"}{% endif %}}</script>
+{% endblock %}
+{% block main %}
+  <section class="section cat-section pp-section">
+    <div class="container">
+      <nav class="pp-crumbs" aria-label="Навигация">
+        <a href="/catalog/">Каталог</a> <span>›</span>
+        <a href="/catalog/?brand={{ p.brand.slug }}">{{ p.brand.name }}</a>
+        {% if p.category %}<span>›</span> <a href="/catalog/?brand={{ p.brand.slug }}&amp;cat={{ p.category.slug }}">{{ p.category.name }}</a>{% endif %}
+      </nav>
+      <div class="pp">
+        <div class="pp__img">
+          {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.brand.name }} {{ p.title }}" referrerpolicy="no-referrer" onerror="this.outerHTML='&lt;img class=&quot;noimg&quot; src=&quot;/brand/favicon/softmontazh-favicon.svg&quot; alt=&quot;&quot;&gt;'">
+          {% else %}<img class="noimg" src="/brand/favicon/softmontazh-favicon.svg" alt="">{% endif %}
+        </div>
+        <div class="pp__info">
+          <div class="pcard__brand">{{ p.brand.name }}</div>
+          <h1>{{ p.title }}</h1>
+          {% if p.type %}<div class="pp__type">{{ p.type }}</div>{% endif %}
+          <div class="pp__buy">
+            {% if p.price %}<div class="pp__price">{{ p.price|money }}</div>{% else %}<div class="pp__price is-req">Цена по запросу</div>{% endif %}
+            <span class="stock{% if p.stock %} is-in{% endif %}">{{ p.stock_text }}</span>
+          </div>
+          <p class="pp__note">{% if p.price %}{{ s.price_note }}{% else %}Уточним цену и срок поставки в течение дня.{% endif %}</p>
+          <div class="pp__actions">
+            <a class="btn btn--accent" href="{{ wa }}" target="_blank" rel="noopener">Заказать в WhatsApp</a>
+            <a class="btn btn--outline" href="tel:+77753259692">Позвонить</a>
+          </div>
+          <table class="pm__specs pp__facts">
+            {% if p.category %}<tr><td>Раздел</td><td>{{ p.category.name }}{% if p.subpath %} › {{ p.subpath }}{% endif %}</td></tr>{% endif %}
+            {% if p.warranty %}<tr><td>Гарантия</td><td>{{ p.warranty }}</td></tr>{% endif %}
+            {% if p.article %}<tr><td>Артикул</td><td>{{ p.article }}</td></tr>{% endif %}
+            {% if p.box_qty and p.box_qty > 1 %}<tr><td>В коробке</td><td>{{ p.box_qty }} шт</td></tr>{% endif %}
+          </table>
+        </div>
+      </div>
+
+      {% if specs %}
+      <div class="pp-block">
+        <h2>Характеристики</h2>
+        <table class="pm__specs pp__specs">
+          {% for k, v in specs %}<tr>{% if k %}<td>{{ k }}</td><td>{{ v }}</td>{% else %}<td colspan="2">{{ v }}</td>{% endif %}</tr>{% endfor %}
+        </table>
+      </div>
+      {% endif %}
+
+      {% if related %}
+      <div class="pp-block">
+        <h2>Похожие в наличии</h2>
+        <div class="cat-grid">
+          {% for r in related %}
+          <a class="pcard" href="/catalog/{{ r.slug }}/">
+            <div class="pcard__img">{% if r.img %}<img src="{{ r.img }}" alt="{{ r.brand }} {{ r.model }}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='&lt;img class=&quot;noimg&quot; src=&quot;/brand/favicon/softmontazh-favicon.svg&quot; alt=&quot;&quot;&gt;'">{% else %}<img class="noimg" src="/brand/favicon/softmontazh-favicon.svg" alt="">{% endif %}</div>
+            <div class="pcard__brand">{{ r.brand }}</div>
+            <div class="pcard__model">{{ r.model }}</div>
+            <div class="pcard__type">{{ r.type }}</div>
+            <div class="pcard__foot"><div class="pcard__price">{{ r.price|money }}</div><span class="stock is-in">В наличии</span></div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

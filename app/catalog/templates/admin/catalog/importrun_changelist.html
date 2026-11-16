@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools-items %}
+  <li>
+    {% if import_requested %}
+      <span style="padding:4px 10px;color:#666">Обновление запрошено, ждёт запуска…</span>
+    {% else %}
+      <form method="post" action="{% url 'admin:catalog_importrun_request' %}" style="display:inline">{% csrf_token %}
+        <button type="submit" class="button" style="padding:6px 14px">Обновить из Barlau сейчас</button>
+      </form>
+    {% endif %}
+  </li>
+{% endblock %}

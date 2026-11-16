@@ -1,0 +1,19 @@
+# Софтмонтаж — каталог (Django) за nginx. Ставится deploy/catalog-install.sh в /etc/systemd/system/
+[Unit]
+Description=softmontazh.kz catalog (gunicorn)
+After=network.target postgresql.service
+
+[Service]
+User=softmontazh
+Group=softmontazh
+WorkingDirectory=/var/www/softmontazh.kz/app
+EnvironmentFile=/opt/softmontazh/.env
+ExecStart=/opt/softmontazh/venv/bin/gunicorn smsite.wsgi:application --bind 127.0.0.1:8002 --workers 1 --threads 2 --timeout 60 --max-requests 1000 --max-requests-jitter 100
+Restart=always
+RestartSec=3
+MemoryMax=200M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

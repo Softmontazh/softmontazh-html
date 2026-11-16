@@ -36,3 +36,24 @@ sudo bash /var/www/softmontazh.kz/deploy/update.sh --rollback
 - Наружу не отдаются: `.git`, `*.md`, `*.sh`, `deploy/`, `VERSION`.
 - Кэш: страницы — `no-cache`, css/js/картинки — 30 дней. После правки css/js увеличить `?v=N` в ссылках на всех страницах.
 - Ограничения: сайт до ~50 МБ, картинки в WebP, видео в репозиторий не класть.
+
+## Каталог оборудования (`/catalog/`)
+Каталог дистрибьютора Barlau (Hikvision, Ruijie и др.) с розничными ценами. Серверная часть — Django в папке `app/`
+(тот же стек, что у платформы Esemer), база — PostgreSQL `softmontazh`, сервис `softmontazh` на `127.0.0.1:8002` за nginx.
+```
+app/catalog/models.py     товары, бренды, разделы, настройки, журнал загрузок
+app/catalog/importer.py   загрузка выгрузок Barlau: Excel (цены, остатки, картинки) + YML (описания)
+app/catalog/views.py      страницы /catalog/, /catalog/<товар>/ и API /api/catalog/...
+app/catalog/admin.py      админка /admin/
+assets/js/catalog.js, assets/css/catalog.css   внешний вид каталога
+deploy/catalog-install.sh, softmontazh.service, softmontazh-catalog.cron, softmontazh-manage
+```
+- **Установка (один раз):** `sudo bash /var/www/softmontazh.kz/deploy/update.sh`, затем `sudo bash /var/www/softmontazh.kz/deploy/catalog-install.sh`.
+  Дальше всё (сайт и каталог) обновляет `update.sh`: бэкап базы → миграции → перезапуск сервиса → проверка.
+- **Данные:** выгрузки забираются по ссылкам каждые 6 часов (`/etc/cron.d/softmontazh-catalog`), кнопка «Обновить из Barlau сейчас» — в админке, раздел «Загрузки из Barlau».
+  Картинки не храним — берутся по ссылкам с b2b.barlau.kz. Если в новой выгрузке меньше половины позиций — загрузка отменяется, на сайте остаётся прежнее.
+- **Цены:** розница Barlau ± наценка (общая → бренд → раздел, ближайшая побеждает), округление; у товара можно задать свою цену. Всё — в админке.
+- **Команды:** `sudo softmontazh-manage createsuperuser` (вход в админку), `sudo softmontazh-manage import_barlau` (загрузить сейчас).
+- **Бэкапы:** `/opt/softmontazh/backups` — ночные (7 шт.) и перед каждым обновлением (5 шт.). Каталог восстанавливается и из выгрузки Barlau.
+- **Ограничения сервера:** 1 воркер, `MemoryMax=200M`; импорт читает файлы потоково.
+- **Локально:** `cd app && pip install -r requirements.txt && python manage.py migrate && python manage.py import_barlau --excel файл.xlsx && python manage.py runserver` (SQLite, открыть http://127.0.0.1:8000/catalog/).
