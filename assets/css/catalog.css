@@ -158,3 +158,16 @@ a.pcard { text-decoration: none; color: inherit; }
 .cat-bmenu .tr-tog, .cat-bmenu .tr-dot { width: 34px; height: 38px; }
 @media (max-width: 960px) { .cat-layout { grid-template-columns: 1fr; } }
 .cchip--back { position: sticky; left: 0; z-index: 1; box-shadow: 6px 0 10px -4px rgba(46,58,140,.18); }
+
+/* Характеристики: длинные значения переносятся, на телефоне — название над значением */
+.pm__specs { table-layout: fixed; width: 100%; }
+.pm__specs td { vertical-align: top; overflow-wrap: anywhere; word-break: break-word; padding-right: 12px; }
+.pp__specs td[colspan] { font-weight: 400; }
+.pp-block, .pp, .pp__info { min-width: 0; max-width: 100%; }
+@media (max-width: 620px) {
+  .pp__specs, .pp__specs tbody, .pp__specs tr, .pp__specs td { display: block; width: 100% !important; }
+  .pp__specs tr { padding: 9px 0; border-bottom: 1px solid #ECEEF5; }
+  .pp__specs td { border: 0; padding: 0; }
+  .pp__specs td:first-child:not([colspan]) { font-size: 13.5px; margin-bottom: 2px; }
+  .pp__facts td:first-child { width: 42%; }
+}
