@@ -20,18 +20,12 @@
         </button>
         <div class="cat-chips" id="subCats"></div>
       </div>
-      <div class="cat-bmenu" id="bmenu" hidden><div id="subBrands"></div></div>
+      <div class="cat-bmenu" id="bmenu" hidden><div id="mtree" class="tree"></div></div>
     </nav>
     <div class="container cat-layout">
       <aside class="cat-side" id="side">
-        <div class="cat-side__block">
-          <div class="cat-side__title">Бренды</div>
-          <div id="brands"></div>
-        </div>
-        <div class="cat-side__block">
-          <div class="cat-side__title">Раздел</div>
-          <div id="cats"></div>
-        </div>
+        <div class="cat-side__title">Каталог</div>
+        <div id="tree" class="tree"></div>
       </aside>
       <div class="cat-main">
         <div class="cat-toolbar">
@@ -52,5 +46,5 @@
 {% endblock %}
 {% block scripts %}
   <script>window.CATALOG_MENU = {{ menu_json|safe }};</script>
-  <script src="/assets/js/catalog.js?v=1"></script>
+  <script src="/assets/js/catalog.js?v=2"></script>
 {% endblock %}

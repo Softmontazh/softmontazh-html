@@ -101,13 +101,13 @@ class ProductAdmin(admin.ModelAdmin):
     list_per_page = 50
     list_select_related = ["brand", "category"]
     actions = ["hide", "show"]
-    readonly_fields = ["barlau_id", "model", "name", "type", "brand", "category", "subpath", "description", "image_preview",
+    readonly_fields = ["barlau_id", "model", "name", "type", "brand", "category", "node", "subpath", "description", "image_preview",
                        "barlau_link", "article", "gtin", "warranty", "box_qty", "base_price", "price", "stock", "stock_label",
                        "is_active", "last_seen", "created", "updated", "site_link"]
     fieldsets = [
         ("На сайте", {"fields": ["site_link", "hidden", "title_override", "price_override", "description_override"]}),
         ("Из выгрузки Barlau (обновляется автоматически)", {"fields": [
-            "image_preview", "model", "name", "type", "brand", "category", "subpath", "base_price", "price", "stock", "stock_label",
+            "image_preview", "model", "name", "type", "brand", "category", "node", "subpath", "base_price", "price", "stock", "stock_label",
             "warranty", "article", "gtin", "box_qty", "description", "barlau_id", "barlau_link", "is_active", "last_seen", "created", "updated"]}),
     ]
 

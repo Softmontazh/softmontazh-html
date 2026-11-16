@@ -13,7 +13,7 @@
       <nav class="pp-crumbs" aria-label="Навигация">
         <a href="/catalog/">Каталог</a> <span>›</span>
         <a href="/catalog/?brand={{ p.brand.slug }}">{{ p.brand.name }}</a>
-        {% if p.category %}<span>›</span> <a href="/catalog/?brand={{ p.brand.slug }}&amp;cat={{ p.category.slug }}">{{ p.category.name }}</a>{% endif %}
+        {% for name, url in crumbs %}<span>›</span> <a href="{{ url }}">{{ name }}</a>{% endfor %}
       </nav>
       <div class="pp">
         <div class="pp__img">

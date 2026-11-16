@@ -84,6 +84,23 @@ class Category(models.Model):
         return f"{self.brand.name} › {self.name}"
 
 
+class Node(models.Model):
+    """Дерево каталога Barlau из YML: бренд › раздел › подраздел › серия…"""
+    barlau_id = models.PositiveIntegerField("ID в Barlau", unique=True)
+    parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="children", verbose_name="Родитель")
+    name = models.CharField("Название", max_length=200)
+    path = models.CharField("Путь", max_length=200, db_index=True, editable=False, help_text="/id/id/id/ — для выборки ветки")
+    depth = models.PositiveSmallIntegerField("Уровень", default=0, editable=False)
+    sort = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        ordering = ["sort"]
+        verbose_name, verbose_name_plural = "узел дерева", "Дерево каталога"
+
+    def __str__(self):
+        return self.name
+
+
 class ProductQuerySet(models.QuerySet):
     def visible(self, settings=None):
         s = settings or SiteSettings.get()
@@ -104,6 +121,7 @@ class Product(models.Model):
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT, related_name="products", verbose_name="Бренд")
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="products", verbose_name="Раздел")
     subpath = models.CharField("Подраздел (из YML)", max_length=300, blank=True)
+    node = models.ForeignKey(Node, on_delete=models.SET_NULL, null=True, blank=True, related_name="products", verbose_name="Узел дерева")
     description = models.TextField("Описание (из выгрузки)", blank=True)
     image_url = models.URLField("Картинка", max_length=500, blank=True)
     barlau_url = models.URLField("Страница в Barlau", max_length=500, blank=True)

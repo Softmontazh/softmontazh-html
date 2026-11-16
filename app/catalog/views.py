@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.cache import cache_control
 
-from .models import Brand, Product, SiteSettings
+from .models import Brand, Node, Product, SiteSettings
 
 PAGE = 24
 WA = "https://wa.me/77779000305"
@@ -21,19 +21,49 @@ def _item(p):
 
 
 def _menu(settings):
-    """Бренды и их разделы с количеством видимых товаров."""
-    vis = Product.objects.visible(settings)
-    counts = {}
-    for r in vis.order_by().values("brand_id", "category_id").annotate(n=Count("id")):
-        counts[(r["brand_id"], r["category_id"])] = r["n"]
+    """Бренды и дерево разделов (из YML Barlau) с количеством видимых товаров.
+
+    Узел: {"id": "n<barlau_id>" | "c<slug раздела>", "name", "count", "children": [...]}.
+    Если дерева для бренда нет — разделы из Excel одним уровнем.
+    """
+    vis = Product.objects.visible(settings).order_by()
+    by_node, by_cat, by_brand = {}, {}, {}
+    for r in vis.values("brand_id", "category_id", "node_id").annotate(n=Count("id")):
+        by_brand[r["brand_id"]] = by_brand.get(r["brand_id"], 0) + r["n"]
+        by_cat[r["category_id"]] = by_cat.get(r["category_id"], 0) + r["n"]
+        if r["node_id"]:
+            by_node[r["node_id"]] = by_node.get(r["node_id"], 0) + r["n"]
+
+    nodes = {n.pk: n for n in Node.objects.only("pk", "barlau_id", "parent_id", "name", "path", "depth", "sort")}
+    kids, total = {}, {}
+    for n in nodes.values():
+        kids.setdefault(n.parent_id, []).append(n)
+    for pk, c in by_node.items():  # количество — вместе с подразделами
+        n = nodes.get(pk)
+        while n is not None:
+            total[n.pk] = total.get(n.pk, 0) + c
+            n = nodes.get(n.parent_id)
+
+    def tree(parent_pk):
+        out = []
+        for n in sorted(kids.get(parent_pk, []), key=lambda x: x.sort):
+            if total.get(n.pk):
+                out.append({"id": f"n{n.barlau_id}", "name": n.name, "count": total[n.pk], "children": tree(n.pk)})
+        return out
+
+    roots = {n.name.strip().lower(): n for n in kids.get(None, [])}
     brands = []
     for b in Brand.objects.filter(enabled=True):
-        cats = [{"slug": c.slug, "name": c.name, "count": counts.get((b.pk, c.pk), 0)}
-                for c in b.categories.filter(enabled=True)]
-        cats = sorted([c for c in cats if c["count"]], key=lambda c: -c["count"])
-        total = sum(n for (bid, _), n in counts.items() if bid == b.pk)
-        if total:
-            brands.append({"slug": b.slug, "name": b.name, "count": total, "cats": cats})
+        count = by_brand.get(b.pk, 0)
+        if not count:
+            continue
+        root = roots.get(b.name.lower())
+        children = tree(root.pk) if root else []
+        if not children:
+            cats = [{"id": f"c{c.slug}", "name": c.name, "count": by_cat.get(c.pk, 0), "children": []}
+                    for c in b.categories.filter(enabled=True)]
+            children = sorted([c for c in cats if c["count"]], key=lambda c: -c["count"])
+        brands.append({"slug": b.slug, "name": b.name, "count": count, "children": children})
     return brands
 
 
@@ -64,6 +94,10 @@ def api_products(request):
         qs = qs.filter(brand__slug=g["brand"])
         if g.get("cat"):
             qs = qs.filter(category__slug=g["cat"])
+    if (g.get("node") or "").isdigit():
+        node = Node.objects.filter(barlau_id=int(g["node"])).first()
+        if node:
+            qs = qs.filter(node__path__startswith=node.path)
     if g.get("instock") == "1":
         qs = qs.filter(stock__gt=0)
     sort = g.get("sort", "pop")
@@ -89,7 +123,7 @@ def api_products(request):
 
 def product_page(request, slug):
     s = SiteSettings.get()
-    p = get_object_or_404(Product.objects.visible(s).select_related("brand", "category"), slug=slug)
+    p = get_object_or_404(Product.objects.visible(s).select_related("brand", "category", "node"), slug=slug)
     specs = []
     for line in [x.strip() for x in p.text.split("|") if x.strip()]:
         if ":" in line:
@@ -102,6 +136,13 @@ def product_page(request, slug):
     related = (Product.objects.visible(s).select_related("brand")
                .filter(category=p.category).exclude(pk=p.pk).filter(stock__gt=0, price__gt=0)
                .order_by("?")[:4]) if p.category_id else []
+    crumbs = []
+    if p.node_id:
+        ids = [int(x) for x in p.node.path.strip("/").split("/") if x.isdigit()]
+        chain = sorted(Node.objects.filter(barlau_id__in=ids), key=lambda n: n.depth)
+        crumbs = [(n.name, f"/catalog/?brand={p.brand.slug}&node={n.barlau_id}") for n in chain[1:]]
+    if not crumbs and p.category:
+        crumbs = [(p.category.name, f"/catalog/?brand={p.brand.slug}&cat={p.category.slug}")]
     return render(request, "catalog/product.html", {
-        "p": p, "s": s, "specs": specs, "wa": f"{WA}?text={quote(msg)}", "related": [_item(r) for r in related],
+        "p": p, "crumbs": crumbs, "s": s, "specs": specs, "wa": f"{WA}?text={quote(msg)}", "related": [_item(r) for r in related],
     })

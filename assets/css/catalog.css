@@ -134,3 +134,27 @@ a.pcard { text-decoration: none; color: inherit; }
   .pp__specs td:first-child { width: 45%; }
 }
 .cat-hint { align-self: center; font-size: 14px; color: var(--sm-muted); white-space: nowrap; }
+
+/* Дерево каталога: бренд › раздел › подраздел */
+.tree { font-size: 15px; }
+.tr-row { display: flex; align-items: center; gap: 2px; padding-left: calc(var(--d, 0) * 14px); }
+.tr-tog, .tr-dot { flex: none; width: 26px; height: 30px; border: 0; background: none; padding: 0; display: grid; place-items: center; }
+.tr-tog { cursor: pointer; border-radius: 8px; color: var(--sm-indigo); }
+.tr-tog:hover { background: var(--sm-tile); }
+.tr-tog::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; margin-left: -2px; }
+.tr.is-open > .tr-row > .tr-tog::before { transform: rotate(45deg); margin: -3px 0 0; }
+.tr-dot::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: #C3C7D6; }
+.tr-name { flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 6px 8px; border: 0; border-radius: 9px; background: none; font: 500 15px/1.3 var(--sm-font); color: var(--sm-text); text-align: left; cursor: pointer; }
+.tr-name:hover { background: var(--sm-tile); }
+.tr-name small { flex: none; font-size: 12.5px; color: var(--sm-muted); font-weight: 400; }
+.tr .tr .tr-name { font-weight: 400; font-size: 14.5px; }
+.tr.is-on > .tr-row > .tr-name { background: var(--sm-indigo); color: #fff; }
+.tr.is-on > .tr-row > .tr-name small { color: #C9CEF2; }
+.cat-side .cat-side__title { margin-bottom: 6px; }
+.cat-side { width: 100%; }
+.cat-layout { grid-template-columns: 290px 1fr; }
+.cchip--back { background: #fff; border: 1px solid var(--sm-tile-border); color: var(--sm-indigo); height: 40px; padding: 0 14px; border-radius: 10px; font-size: 14px; }
+.cat-bmenu .tr-name { padding: 9px 8px; font-size: 15.5px; }
+.cat-bmenu .tr-tog, .cat-bmenu .tr-dot { width: 34px; height: 38px; }
+@media (max-width: 960px) { .cat-layout { grid-template-columns: 1fr; } }
+.cchip--back { position: sticky; left: 0; z-index: 1; box-shadow: 6px 0 10px -4px rgba(46,58,140,.18); }

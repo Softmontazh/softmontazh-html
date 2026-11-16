@@ -16,7 +16,7 @@ from django.conf import settings as dj
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Brand, Category, ImportRun, Product, SiteSettings, make_slug, recalc_prices
+from .models import Brand, Category, ImportRun, Node, Product, SiteSettings, make_slug, recalc_prices
 
 log = logging.getLogger("catalog")
 
@@ -188,45 +188,80 @@ class Importer:
         self.note(f"Excel: позиций {seen}, новых {created}, обновлено {updated}, пропало из выгрузки {deactivated}")
 
     # --- YML ---
+    def sync_nodes(self, cats, parents, order):
+        """Сохранить дерево категорий YML. Возвращает {barlau_id категории: pk узла}."""
+        existing = {n.barlau_id: n for n in Node.objects.all()}
+        for cid in order:
+            name = cats[cid][:200]
+            n = existing.get(cid)
+            if n is None:
+                existing[cid] = Node.objects.create(barlau_id=cid, name=name, path="/", sort=order[cid])
+            elif n.name != name or n.sort != order[cid]:
+                n.name, n.sort = name, order[cid]
+                n.save(update_fields=["name", "sort"])
+        changed = []
+        for cid, n in existing.items():
+            if cid not in cats:
+                continue
+            chain, cur, guard = [], cid, 0
+            while cur in cats and guard < 15:
+                chain.append(cur); cur = parents.get(cur); guard += 1
+            chain.reverse()
+            path = "/" + "/".join(str(c) for c in chain) + "/"
+            parent = existing.get(parents.get(cid)) if parents.get(cid) else None
+            pid = parent.pk if parent else None
+            if n.path != path or n.parent_id != pid or n.depth != len(chain) - 1:
+                n.path, n.parent_id, n.depth = path, pid, len(chain) - 1
+                changed.append(n)
+        if changed:
+            Node.objects.bulk_update(changed, ["path", "parent", "depth"], batch_size=BATCH)
+        return {cid: n.pk for cid, n in existing.items()}
+
     def import_yml(self, path):
-        cats, parents = {}, {}
+        cats, parents, order = {}, {}, {}
         ids = dict(Product.objects.values_list("barlau_id", "pk"))
+        node_ids = None
         batch, described = [], 0
 
         def path_of(cid):
             names, guard = [], 0
-            while cid and cid in cats and guard < 12:
+            while cid and cid in cats and guard < 15:
                 names.append(cats[cid]); cid = parents.get(cid); guard += 1
             return list(reversed(names))
 
         def flush():
             nonlocal batch
             if batch:
-                Product.objects.bulk_update(batch, ["description", "subpath"]); batch = []
+                Product.objects.bulk_update(batch, ["description", "subpath", "node"]); batch = []
 
         for event, el in ET.iterparse(str(path), events=("end",)):
             tag = el.tag.rsplit("}", 1)[-1]
             if tag == "category":
-                cid = el.get("id")
+                cid = _num(el.get("id"))
                 if cid:
                     cats[cid] = (el.text or "").strip()
+                    order[cid] = len(order)
                     if el.get("parentId"):
-                        parents[cid] = el.get("parentId")
+                        parents[cid] = _num(el.get("parentId"))
                 el.clear()
             elif tag == "offer":
+                if node_ids is None:  # категории в YML идут до товаров
+                    node_ids = self.sync_nodes(cats, parents, order)
                 bid = _num(el.get("id"))
                 pk = ids.get(bid)
                 if pk:
                     desc = re.sub(r"<[^>]+>", " ", (el.findtext("description") or "")).strip()
                     desc = re.sub(r"[ \t]+", " ", desc)
-                    p = path_of((el.findtext("categoryId") or "").strip())
-                    sub = " › ".join(p[2:])[:300]
-                    batch.append(Product(pk=pk, description=desc, subpath=sub))
+                    cid = _num(el.findtext("categoryId"))
+                    sub = " › ".join(path_of(cid)[2:])[:300]
+                    batch.append(Product(pk=pk, description=desc, subpath=sub, node_id=node_ids.get(cid)))
                     if desc:
                         described += 1
                     if len(batch) >= BATCH:
                         flush()
                 el.clear()
+        if node_ids is None and cats:
+            self.sync_nodes(cats, parents, order)
         flush()
         self.run.described_count = described
         self.note(f"YML: категорий {len(cats)}, описаний {described}")

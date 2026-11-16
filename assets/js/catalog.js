@@ -14,25 +14,65 @@
   };
   $("q").value = st.q; $("instock").checked = st.instock; $("sort").value = st.sort;
 
-  const brandOf = (slug) => MENU.find((b) => b.slug === slug);
+  // --- дерево: бренды › разделы › подразделы (id узла: "b:<бренд>", "n<id Barlau>", "c<раздел>") ---
+  const ROOT = MENU.map((b) => ({ id: "b:" + b.slug, name: b.name, count: b.count, children: b.children, brand: b.slug }));
   const total = MENU.reduce((a, b) => a + b.count, 0);
+  const parentOf = new Map(), brandOfId = new Map(), byId = new Map();
+  (function index(list, parent, brand) {
+    list.forEach((it) => {
+      byId.set(it.id, it); parentOf.set(it.id, parent); brandOfId.set(it.id, brand || it.brand);
+      index(it.children || [], it, brand || it.brand);
+    });
+  })(ROOT, null, null);
 
-  // --- меню: колонка (компьютер), выпадающий список брендов и лента разделов (телефон) ---
+  // выбранный узел из адреса
+  st.sel = st.brand ? "b:" + st.brand : "";
+  if (url.get("node")) st.sel = "n" + url.get("node");
+  else if (url.get("cat")) st.sel = "c" + url.get("cat");
+  if (st.sel && !byId.has(st.sel)) st.sel = st.brand ? "b:" + st.brand : "";
+  const open = new Set();
+  const openPathTo = (id) => { let it = byId.get(id); while (it) { open.add(it.id); it = parentOf.get(it.id); } };
+  openPathTo(st.sel);
+
+  function setSel(id) {
+    st.sel = id;
+    st.brand = id ? brandOfId.get(id) : "";
+    st.node = id && id[0] === "n" ? id.slice(1) : "";
+    st.cat = id && id[0] === "c" ? id.slice(1) : "";
+  }
+  setSel(st.sel);
+
+  function treeHtml(list, depth) {
+    return list.map((it) => {
+      const kids = it.children && it.children.length;
+      const isOpen = open.has(it.id), on = st.sel === it.id;
+      return `<div class="tr${on ? " is-on" : ""}${isOpen ? " is-open" : ""}" style="--d:${depth}">
+        <div class="tr-row">${kids ? `<button class="tr-tog" data-tog="${esc(it.id)}" aria-label="${isOpen ? "Свернуть" : "Развернуть"}" aria-expanded="${isOpen}"></button>` : `<span class="tr-dot"></span>`}
+          <button class="tr-name" data-sel="${esc(it.id)}">${esc(it.name)} <small>${it.count}</small></button></div>
+        ${kids && isOpen ? `<div class="tr-kids">${treeHtml(it.children, depth + 1)}</div>` : ""}
+      </div>`;
+    }).join("");
+  }
+
   function renderMenu() {
-    const opt = (attr, v, label, n, on) => `<button class="cat-opt${on ? " is-on" : ""}" ${attr}="${esc(v)}">${esc(label)} <small>${n}</small></button>`;
-    const brandsHtml = opt("data-brand", "", "Все бренды", total, !st.brand) + MENU.map((b) => opt("data-brand", b.slug, b.name, b.count, st.brand === b.slug)).join("");
-    $("brands").innerHTML = brandsHtml;
-    $("subBrands").innerHTML = brandsHtml;
-    const b = brandOf(st.brand);
-    $("bbtnLabel").textContent = b ? b.name : "Все бренды";
-    const cats = b ? b.cats : [];
-    $("cats").closest(".cat-side__block").hidden = !b;
-    $("cats").innerHTML = b ? opt("data-cat", "", "Все разделы", b.count, !st.cat) + cats.map((c) => opt("data-cat", c.slug, c.name, c.count, st.cat === c.slug)).join("") : "";
-    $("subCats").innerHTML = b
-      ? [["", "Все разделы"], ...cats.map((c) => [c.slug, c.name])].map(([v, l]) => `<button class="cchip cchip--cat${st.cat === v ? " is-on" : ""}" data-cat="${esc(v)}">${esc(l)}</button>`).join("")
-      : `<span class="cat-hint">Выберите бренд — появятся разделы</span>`;
+    const all = `<div class="tr${!st.sel ? " is-on" : ""}" style="--d:0"><div class="tr-row"><span class="tr-dot"></span><button class="tr-name" data-sel="">Все товары <small>${total}</small></button></div></div>`;
+    $("tree").innerHTML = all + treeHtml(ROOT, 0);
+    $("mtree").innerHTML = all + treeHtml(ROOT, 0);
+    const cur = byId.get(st.sel);
+    $("bbtnLabel").textContent = cur ? cur.name : "Каталог";
+    // лента на телефоне: «назад» + подразделы текущего узла (или соседи, если глубже некуда)
+    let chips = "";
+    if (cur) {
+      const par = parentOf.get(cur.id);
+      const list = cur.children && cur.children.length ? cur.children : (par ? par.children : ROOT);
+      chips = `<button class="cchip cchip--back" data-sel="${par ? esc(par.id) : ""}">‹ ${esc(par ? par.name : "Все")}</button>` +
+        list.map((c) => `<button class="cchip cchip--cat${c.id === st.sel ? " is-on" : ""}" data-sel="${esc(c.id)}">${esc(c.name)}</button>`).join("");
+    } else {
+      chips = ROOT.map((c) => `<button class="cchip cchip--cat" data-sel="${esc(c.id)}">${esc(c.name)}</button>`).join("");
+    }
+    $("subCats").innerHTML = chips;
     const on = $("subCats").querySelector(".is-on");
-    if (on) on.scrollIntoView({ block: "nearest", inline: "center" });
+    if (on) on.scrollIntoView({ block: "nearest", inline: "center" }); else $("subCats").scrollLeft = 0;
   }
 
   // --- товары ---
@@ -53,7 +93,8 @@
     const my = ++req;
     const qs = new URLSearchParams();
     if (st.brand) qs.set("brand", st.brand);
-    if (st.brand && st.cat) qs.set("cat", st.cat);
+    if (st.node) qs.set("node", st.node);
+    else if (st.brand && st.cat) qs.set("cat", st.cat);
     if (st.q) qs.set("q", st.q);
     if (st.instock) qs.set("instock", "1");
     if (st.sort !== "pop") qs.set("sort", st.sort);
@@ -82,15 +123,22 @@
     $("bmenu").hidden = !open; $("bbtn").setAttribute("aria-expanded", open); $("bbtn").classList.toggle("is-open", open);
   }
   const pick = (e) => {
-    const b = e.target.closest("[data-brand]"), c = e.target.closest("[data-cat]");
-    if (b) { st.brand = b.dataset.brand; st.cat = ""; } else if (c) { st.cat = c.dataset.cat; } else return;
-    toggleBrands(false); reload();
-    if (window.innerWidth > 960) window.scrollTo({ top: $("grid").getBoundingClientRect().top + scrollY - 160, behavior: "smooth" });
+    const tog = e.target.closest("[data-tog]");
+    if (tog) { const id = tog.dataset.tog; open.has(id) ? open.delete(id) : open.add(id); renderMenu(); return; }
+    const sel = e.target.closest("[data-sel]");
+    if (!sel) return;
+    const id = sel.dataset.sel;
+    setSel(id); if (id) { openPathTo(id); open.add(id); }
+    const inPanel = !!e.target.closest("#bmenu");
+    const it = byId.get(id);
+    if (!inPanel || !(it && it.children && it.children.length)) toggleBrands(false);
+    reload();
+    if (window.innerWidth > 960) window.scrollTo({ top: Math.min(scrollY, $("grid").getBoundingClientRect().top + scrollY - 160), behavior: "smooth" });
   };
-  ["brands", "cats", "sub"].forEach((id) => $(id).addEventListener("click", pick));
+  ["tree", "sub"].forEach((id) => $(id).addEventListener("click", pick));
   $("bbtn").addEventListener("click", (e) => { e.stopPropagation(); toggleBrands($("bmenu").hidden); });
-  document.addEventListener("click", (e) => { if (!e.target.closest("#bmenu, #bbtn")) toggleBrands(false); });
-  let t; $("q").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { st.q = e.target.value.trim(); if (st.q) { st.brand = ""; st.cat = ""; } reload(); }, 300); });
+  document.addEventListener("click", (e) => { if (!e.composedPath().some((el) => el.id === "bmenu" || el.id === "bbtn")) toggleBrands(false); });
+  let t; $("q").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { st.q = e.target.value.trim(); if (st.q) setSel(""); reload(); }, 300); });
   $("instock").addEventListener("change", (e) => { st.instock = e.target.checked; reload(); });
   $("sort").addEventListener("change", (e) => { st.sort = e.target.value; reload(); });
   $("more").addEventListener("click", () => { st.page += 1; load(true); });
