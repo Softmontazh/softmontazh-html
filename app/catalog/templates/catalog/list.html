@@ -45,6 +45,6 @@
   </section>
 {% endblock %}
 {% block scripts %}
-  <script>window.CATALOG_MENU = {{ menu_json|safe }};</script>
-  <script src="/assets/js/catalog.js?v=3"></script>
+  <script>window.CATALOG_MENU = {{ menu_json|safe }};{% if role %} window.CATALOG_ROLE = "{{ role }}";{% endif %}</script>
+  <script src="/assets/js/catalog.js?v=4"></script>
 {% endblock %}

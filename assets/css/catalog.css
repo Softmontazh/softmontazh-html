@@ -172,3 +172,17 @@ a.pcard { text-decoration: none; color: inherit; }
   .pp__facts td:first-child { width: 42%; }
 }
 .pp__manager { font-size: 14.5px; color: var(--sm-muted); margin: -10px 0 22px; } .pp__manager a { color: var(--sm-indigo); font-weight: 500; text-decoration: none; }
+
+/* Только для вошедших сотрудников */
+.staffbar { background: #FFF4E8; border-bottom: 1px solid #F6C99A; font-size: 14px; color: #6B3D0E; }
+.staffbar__in { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; justify-content: space-between; padding: 8px 20px; }
+.staffbar__links { display: inline-flex; gap: 12px; align-items: center; }
+.staffbar a, .staffbar button { color: var(--sm-orange-btn); font: 600 14px var(--sm-font); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+.staffbar form { display: inline; margin: 0; }
+.pcard__staff { margin-top: 6px; font-size: 12.5px; color: #8A4A0F; background: #FFF4E8; border-radius: 8px; padding: 4px 8px; }
+.staffbox { border: 1px dashed #F0A35E; background: #FFF9F2; border-radius: 14px; padding: 12px 14px; margin: 6px 0 16px; }
+.staffbox__title { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #B4600F; margin-bottom: 6px; }
+.staffbox table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.staffbox td { padding: 3px 0; vertical-align: top; }
+.staffbox td:first-child { color: var(--sm-muted); width: 40%; }
+.staffbox small { color: var(--sm-muted); }

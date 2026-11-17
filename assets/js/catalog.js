@@ -79,12 +79,21 @@
   const stockHtml = (p) => p.stock > 0
     ? `<span class="stock is-in">В наличии${p.stock_label && p.stock_label[0] === ">" ? " " + esc(p.stock_label) : ""}</span>`
     : `<span class="stock">Под заказ</span>`;
+  const staffLine = (p) => {
+    const x = p.staff; if (!x) return "";
+    const parts = [];
+    if (window.CATALOG_ROLE === "owner") parts.push(x.purchase ? `закуп ${money(x.purchase)}` : "закуп —");
+    parts.push(x.floor ? `пол ${money(x.floor)}` : "пол —");
+    if (x.room_pct != null) parts.push(`уступить до ${x.room_pct}%`);
+    return `<div class="pcard__staff" title="Видят только сотрудники">${parts.join(" · ")}</div>`;
+  };
   const card = (p) => `
     <a class="pcard" href="/catalog/${esc(p.slug)}/">
       <div class="pcard__img">${p.img ? `<img src="${esc(p.img)}" alt="${esc(p.brand + " " + p.model)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='${NOIMG.replace(/"/g, "&quot;")}'">` : NOIMG}</div>
       <div class="pcard__brand">${esc(p.brand)}</div>
       <div class="pcard__model">${esc(p.model)}</div>
       <div class="pcard__type">${esc(p.type)}</div>
+      ${staffLine(p)}
       <div class="pcard__foot">${p.price > 0 ? `<div class="pcard__price">${money(p.price)}</div>` : `<div class="pcard__price is-req">Цена по запросу</div>`}${stockHtml(p)}</div>
     </a>`;
 
@@ -102,7 +111,7 @@
     qs.set("page", st.page);
     $("grid").classList.add("is-loading");
     try {
-      const r = await fetch("/api/catalog/products?" + qs);
+      const r = await fetch("/api/catalog/products?" + qs, { credentials: "same-origin" });
       const d = await r.json();
       if (my !== req) return;
       $("count").textContent = `${d.total.toLocaleString("ru-RU")} ${plural(d.total, ["товар", "товара", "товаров"])}`;

@@ -79,7 +79,7 @@
     </div>
     <div class="site-footer__bottom">
       <span>© ${new Date().getFullYear()} ТОО «Софтмонтаж». БИН 250640009719</span>
-      <span>Гарантия на выполненные работы</span>
+      <span>Гарантия на выполненные работы · <a href="/admin/login/?next=/catalog/" rel="nofollow" style="color:inherit;opacity:.6">Вход для сотрудников</a></span>
     </div>
   </div>`;
 

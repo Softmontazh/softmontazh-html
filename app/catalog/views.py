@@ -11,11 +11,45 @@ from .models import Brand, Node, Product, SiteSettings
 PAGE = 24
 
 
-def _item(p):
+def staff_role(request):
+    """owner — владелец (суперпользователь), manager — группа «Менеджер», None — посетитель."""
+    u = getattr(request, "user", None)
+    if not u or not u.is_authenticated or not u.is_active:
+        return None
+    if u.is_superuser:
+        return "owner"
+    if u.is_staff and u.groups.filter(name="Менеджер").exists():
+        return "manager"
+    return None
+
+
+def staff_info(p, role):
+    """Служебные цифры для вошедших сотрудников. Посетители их никогда не получают."""
+    if role is None:
+        return None
+    room = (p.price - p.floor_price) if (p.price and p.floor_price) else None
+    d = {"floor": p.floor_price, "room": room,
+         "room_pct": round(room * 100 / p.price) if room is not None and p.price else None}
+    if role == "owner":
+        margin = (p.price - p.purchase_price) if (p.price and p.purchase_price) else None
+        d.update(purchase=p.purchase_price, margin=margin,
+                 margin_pct=round(margin * 100 / p.price) if margin is not None else None,
+                 commission=float(p.commission_percent) if p.commission_percent is not None else None)
+    return d
+
+
+def _private(resp):
+    resp["Cache-Control"] = "private, no-store"
+    resp["Vary"] = "Cookie"
+    return resp
+
+
+def _item(p, role=None):
     return {
         "slug": p.slug, "model": p.title, "type": p.type, "brand": p.brand.name,
         "price": p.price, "stock": p.stock, "stock_label": p.stock_label,
         "img": p.image_url,
+        **({"staff": staff_info(p, role)} if role else {}),
     }
 
 
@@ -69,11 +103,13 @@ def _menu(settings):
 def catalog_page(request):
     s = SiteSettings.get()
     menu = _menu(s)
-    return render(request, "catalog/list.html", {
-        "s": s,
+    role = staff_role(request)
+    resp = render(request, "catalog/list.html", {
+        "s": s, "role": role,
         "menu_json": json.dumps(menu, ensure_ascii=False).replace("</", "<\\/"),
         "total": sum(b["count"] for b in menu),
     })
+    return _private(resp) if role else resp
 
 
 @cache_control(max_age=60, public=True)
@@ -90,7 +126,6 @@ def api_menu(request):
     return JsonResponse({"brands": _menu(SiteSettings.get())})
 
 
-@cache_control(max_age=60, public=True)
 def api_products(request):
     s = SiteSettings.get()
     qs = Product.objects.visible(s).select_related("brand")
@@ -126,8 +161,14 @@ def api_products(request):
         page = max(int(g.get("page", 1)), 1)
     except ValueError:
         page = 1
-    items = [_item(p) for p in qs[(page - 1) * PAGE: page * PAGE]]
-    return JsonResponse({"total": total, "page": page, "pages": (total + PAGE - 1) // PAGE, "items": items})
+    role = staff_role(request)
+    items = [_item(p, role) for p in qs[(page - 1) * PAGE: page * PAGE]]
+    resp = JsonResponse({"total": total, "page": page, "pages": (total + PAGE - 1) // PAGE, "items": items})
+    if role:
+        return _private(resp)
+    resp["Cache-Control"] = "public, max-age=60"
+    resp["Vary"] = "Cookie"
+    return resp
 
 
 def product_page(request, slug):
@@ -152,6 +193,9 @@ def product_page(request, slug):
         crumbs = [(n.name, f"/catalog/?brand={p.brand.slug}&node={n.barlau_id}") for n in chain[1:]]
     if not crumbs and p.category:
         crumbs = [(p.category.name, f"/catalog/?brand={p.brand.slug}&cat={p.category.slug}")]
-    return render(request, "catalog/product.html", {
+    role = staff_role(request)
+    resp = render(request, "catalog/product.html", {
         "p": p, "crumbs": crumbs, "s": s, "specs": specs, "wa": f"{s.wa}?text={quote(msg)}", "related": [_item(r) for r in related],
+        "role": role, "staff": staff_info(p, role),
     })
+    return _private(resp) if role else resp

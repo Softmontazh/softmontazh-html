@@ -28,6 +28,17 @@
             {% if p.price %}<div class="pp__price">{{ p.price|money }}</div>{% else %}<div class="pp__price is-req">Цена по запросу</div>{% endif %}
             <span class="stock{% if p.stock %} is-in{% endif %}">{{ p.stock_text }}</span>
           </div>
+          {% if staff %}
+          <div class="staffbox">
+            <div class="staffbox__title">Для сотрудников</div>
+            <table>
+              {% if role == "owner" %}<tr><td>Закупка</td><td>{% if staff.purchase %}{{ staff.purchase|money }} <small>{{ p.purchase_source }}</small>{% else %}не задана — впишите скидку в дереве разделов{% endif %}</td></tr>{% endif %}
+              <tr><td>Пол</td><td>{% if staff.floor %}{{ staff.floor|money }}{% else %}нет — продавать только по рознице{% endif %}</td></tr>
+              {% if staff.room is not None %}<tr><td>Можно уступить</td><td>до {{ staff.room|money }} ({{ staff.room_pct }}%)</td></tr>{% endif %}
+              {% if role == "owner" and staff.margin is not None %}<tr><td>Маржа по рознице</td><td>{{ staff.margin|money }} ({{ staff.margin_pct }}%){% if staff.commission is not None %} · менеджеру {{ staff.commission|floatformat:"-2" }}% прибыли{% endif %}</td></tr>{% endif %}
+            </table>
+          </div>
+          {% endif %}
           <p class="pp__note">{% if p.price %}{{ s.price_note }}{% else %}Уточним цену и срок поставки в течение дня.{% endif %}</p>
           <div class="pp__actions">
             <a class="btn btn--accent" href="{{ wa }}" target="_blank" rel="noopener">Заказать в WhatsApp</a>
