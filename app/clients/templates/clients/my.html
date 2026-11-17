@@ -1,0 +1,53 @@
+{% extends "catalog/base.html" %}{% load catalog_tags %}
+{% block title %}Личный кабинет — Софтмонтаж{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block main %}
+<section class="section cat-section cab">
+  <div class="container">
+    <div class="cab-head"><h1 class="cart-h1">Личный кабинет</h1>
+      <div class="cab-actions"><a class="btn btn--outline btn--sm" href="/catalog/">Каталог</a><a class="btn btn--primary btn--sm" href="/catalog/cart/">Корзина</a></div></div>
+    <div class="my-grid">
+      <div class="kp-card">
+        <h2 class="kp-h2">Мои данные</h2>
+        <p class="kp-hint">Телефон: <b>{{ c.display_phone|default:"не указан" }}</b>{% if c.phone_verified %} ✔ подтверждён Telegram{% endif %}</p>
+        {% if not c.phone %}<p class="kp-hint">Чтобы оформлять заявки, откройте бота <a href="https://t.me/sm_salebot" target="_blank">@sm_salebot</a> и отправьте номер кнопкой.</p>{% endif %}
+        <form id="prof">{% csrf_token %}
+          <div class="kp-label">Имя</div><input class="kp-input" name="name" value="{{ c.name }}" maxlength="120">
+          <div class="kp-label">Email</div><input class="kp-input" name="email" value="{{ c.email }}" maxlength="120" type="email">
+          <div class="kp-label">Компания</div><input class="kp-input" name="company" value="{{ c.company }}" maxlength="160">
+          <button class="btn btn--primary btn--sm" style="margin-top:12px">Сохранить</button> <span class="kp-hint" id="profOk"></span>
+        </form>
+        <form method="post" action="/my/logout" style="margin-top:14px">{% csrf_token %}<button class="kp-link">Выйти</button></form>
+      </div>
+      <div class="kp-card">
+        <h2 class="kp-h2">Мои заявки</h2>
+        {% for l in leads %}
+          <div class="kp-item">
+            <div class="kp-row"><b>Заявка №{{ l.pk }} от {{ l.created|date:"d.m.Y" }}</b><span class="st st-{{ l.status }}">{{ l.get_status_display }}</span></div>
+            <div class="kp-hint">{% for i in l.items|slice:":4" %}{{ i.brand }} {{ i.model }} × {{ i.qty }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if l.items|length > 4 %} …{% endif %} · {{ l.total|money }}</div>
+            {% for k in l.kps.all %}{% if k.link_active and k.status != "draft" %}<a class="btn btn--outline btn--sm" style="margin-top:8px" href="/kp/v/{{ k.token }}/">📄 {{ k.code }} — коммерческое предложение</a>{% endif %}{% endfor %}
+            <button type="button" class="kp-link" data-repeat="{{ l.items|safe_items }}">Повторить заказ → в корзину</button>
+          </div>
+        {% empty %}<p class="kp-hint">Заявок пока нет. Соберите корзину в каталоге и нажмите «Пришлите мне КП» или «Заказать».</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "";
+  document.getElementById("prof").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(e.target).entries());
+    const r = await fetch("/api/me/profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf }, body: JSON.stringify(d) });
+    document.getElementById("profOk").textContent = r.ok ? "Сохранено" : "Не сохранилось";
+  });
+  document.querySelectorAll("[data-repeat]").forEach((b) => b.addEventListener("click", () => {
+    JSON.parse(b.dataset.repeat).forEach((i) => window.SMCart.add(i.slug, i.qty));
+    location.href = "/catalog/cart/";
+  }));
+})();
+</script>
+{% endblock %}

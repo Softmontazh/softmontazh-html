@@ -52,8 +52,8 @@
     e.preventDefault();
     const f = new FormData(e.target), d = Object.fromEntries(f.entries());
     const digits = (d.phone || "").replace(/\D/g, "");
-    if (digits.length < 10 && !(d.email || "").includes("@")) { err("Укажите телефон — по нему менеджер с вами свяжется."); return; }
-    d.kind = kind; d.items = Object.entries(C.get()).map(([slug, qty]) => ({ slug, qty }));
+    if (!window.SM_CUSTOMER && digits.length < 10 && !(d.email || "").includes("@")) { err("Укажите телефон — по нему менеджер с вами свяжется."); return; }
+    d.kind = kind; d.via_tg = !!window.SM_IN_TG; d.items = Object.entries(C.get()).map(([slug, qty]) => ({ slug, qty }));
     e.target.querySelectorAll("button").forEach((x) => { x.disabled = true; });
     try {
       const r = await fetch("/api/cart/lead", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() }, body: JSON.stringify(d) });
@@ -62,6 +62,7 @@
       C.set({}); $("leadNo").textContent = res.id || "";
       $("cartDoneText").firstChild.textContent = kind === "order" ? "Заказ принят. Менеджер свяжется с вами, чтобы подтвердить наличие и доставку. Номер заявки: " : "Менеджер подготовит коммерческое предложение и свяжется с вами. Номер заявки: ";
       show("done");
+      try { if (window.SM_IN_TG && window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.HapticFeedback.notificationOccurred("success"); } catch (e2) { /* */ }
     } catch (ex) { err(ex.message); }
     e.target.querySelectorAll("button").forEach((x) => { x.disabled = false; });
   });

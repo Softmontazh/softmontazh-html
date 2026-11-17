@@ -50,8 +50,10 @@ def client_ip(request):
 
 @ensure_csrf_cookie
 def cart_page(request):
-    resp = render(request, "kp/cart.html", {"role": staff_role(request), "s": SiteSettings.get()})
-    return _private(resp) if staff_role(request) else resp
+    from clients.services import session_customer
+    me = session_customer(request)
+    resp = render(request, "kp/cart.html", {"role": staff_role(request), "s": SiteSettings.get(), "me": me})
+    return _private(resp) if (staff_role(request) or me) else resp
 
 
 def api_cart_items(request):
@@ -72,9 +74,11 @@ def api_lead(request):
     key = f"lead-rate:{ip}"
     if cache.get(key, 0) >= 8:
         return JsonResponse({"error": "Слишком много заявок подряд. Напишите нам в WhatsApp."}, status=429)
-    name = str(d.get("name", "")).strip()[:120]
-    phone = str(d.get("phone", "")).strip()[:40]
-    email = str(d.get("email", "")).strip()[:120]
+    from clients.services import customer_for_lead, session_customer
+    me = session_customer(request)
+    name = str(d.get("name", "")).strip()[:120] or (me.name if me else "")
+    phone = str(d.get("phone", "")).strip()[:40] or (me.display_phone if me else "")
+    email = str(d.get("email", "")).strip()[:120] or (me.email if me else "")
     digits = "".join(ch for ch in phone if ch.isdigit())
     if len(digits) < 10 and "@" not in email:
         return JsonResponse({"error": "Укажите телефон (или email), чтобы мы могли связаться."}, status=400)
@@ -91,10 +95,17 @@ def api_lead(request):
             total += q * p.price
     if not items:
         return JsonResponse({"error": "Корзина пуста — добавьте товары из каталога."}, status=400)
+    if me and me.blocked:
+        return JsonResponse({"error": "Заявка не принята. Свяжитесь с нами по телефону."}, status=403)
+    customer = me if (me and me.phone) else customer_for_lead(phone, name)
     lead = Lead.objects.create(
-        kind="order" if d.get("kind") == "order" else "kp", source="site", name=name, phone=phone, email=email,
-        company=str(d.get("company", "")).strip()[:160], comment=str(d.get("comment", "")).strip()[:2000],
+        kind="order" if d.get("kind") == "order" else "kp", source="telegram" if d.get("via_tg") and me else "site",
+        name=name, phone=phone, email=email, customer=customer,
+        company=(str(d.get("company", "")).strip() or (me.company if me else ""))[:160], comment=str(d.get("comment", "")).strip()[:2000],
         items=items, total=total)
+    if me:
+        me.cart = {}
+        me.save(update_fields=["cart", "last_seen"])
     cache.set(key, cache.get(key, 0) + 1, 3600)
     return JsonResponse({"ok": True, "id": lead.pk})
 

@@ -1,0 +1,16 @@
+{% extends "catalog/base.html" %}
+{% block title %}Вход в личный кабинет — Софтмонтаж{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block main %}
+<section class="section cat-section">
+  <div class="container" style="max-width:560px">
+    <div class="kp-card" style="text-align:center;padding:30px">
+      <h1 class="cart-h1">Личный кабинет</h1>
+      <p>Ваши заявки, статусы и коммерческие предложения. Вход — через Telegram, пароль не нужен.</p>
+      {% if request.GET.err %}<p class="cart-err">Вход не удался — попробуйте ещё раз.</p>{% endif %}
+      <div style="margin:18px 0"><script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="{{ bot }}" data-size="large" data-radius="10" data-auth-url="/my/tg-login" data-request-access="write"></script></div>
+      <p class="kp-hint">Впервые? Откройте бота <a href="https://t.me/{{ bot }}" target="_blank" rel="noopener">@{{ bot }}</a> и отправьте номер кнопкой — бот вас запомнит, и все заявки по этому номеру будут здесь.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

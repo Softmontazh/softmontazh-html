@@ -15,7 +15,7 @@ log = logging.getLogger("tgbot")
 
 @receiver(post_save, sender=Lead)
 def lead_created(sender, instance, created, **kw):
-    if not created or instance.source != "site":
+    if not created or instance.source not in ("site", "telegram"):
         return
 
     def go():

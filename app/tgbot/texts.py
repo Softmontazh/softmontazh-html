@@ -38,6 +38,8 @@ COMMANDS = [("help", "Что умеет бот"), ("stop", "Отключить T
 def lead_message(lead, taken_by=None):
     """Уведомление о заявке. Только то, что видит менеджер: никаких закупок, пола, процентов, прибыли."""
     head = "🛒 <b>Заказ</b>" if lead.kind == "order" else "📄 <b>Запрос КП</b>"
+    if lead.source == "telegram":
+        head += " · из Telegram"
     if lead.source == "manager":
         head = "📝 <b>Заявка менеджера</b>"
     lines = [f"{head} · заявка №{lead.pk}"]
@@ -46,7 +48,7 @@ def lead_message(lead, taken_by=None):
         who += f", {escape(lead.company)}"
     lines.append(f"👤 {who}")
     if lead.phone:
-        lines.append(f"📞 {escape(lead.phone)}")
+        lines.append(f"📞 {escape(lead.phone)}" + (" ✔" if getattr(lead, "customer", None) and lead.customer.phone_verified else ""))
     if lead.email:
         lines.append(f"✉️ {escape(lead.email)}")
     n = len(lead.items or [])
@@ -61,3 +63,45 @@ def lead_message(lead, taken_by=None):
     if taken_by:
         lines.append(f"\n✅ Взял в работу: <b>{escape(taken_by)}</b>")
     return "\n".join(lines)
+
+
+# ---------- клиенты ----------
+BTN_CATALOG = "🛒 Каталог"
+BTN_SEARCH = "🔎 Поиск"
+BTN_MY = "📄 Мои заявки"
+BTN_MANAGER = "💬 Связаться с менеджером"
+BTN_PHONE = "📱 Отправить номер"
+BTN_MORE = "Подробнее"
+BTN_ADD = "➕ В корзину"
+BTN_CHECKOUT = "🧾 Корзина и заявка"
+BTN_ALL = "Все результаты в каталоге"
+BTN_CABINET = "Личный кабинет"
+BTN_TG_CLIENT = "Написать в Telegram"
+
+C_WELCOME = ("Здравствуйте! Это Софтмонтаж — видеонаблюдение, домофоны, СКУД, сигнализация и сети в Караганде.\n\n"
+             "Здесь можно посмотреть каталог (Hikvision, Ruijie и другие), собрать корзину и получить коммерческое предложение.\n\n"
+             "Чтобы начать, отправьте свой номер кнопкой ниже — так менеджер сможет с вами связаться.")
+C_PHONE_OWN = "Отправьте, пожалуйста, свой номер — кнопкой «📱 Отправить номер» внизу."
+C_ASK_NAME = "Спасибо! Как к вам обращаться? Напишите имя."
+C_NAME_BAD = "Напишите имя — от 2 до 60 символов."
+C_READY = "Готово, {name}! Каталог — кнопкой «🛒 Каталог». Или просто напишите модель или что ищете, например «DS-2CD1043» или «домофон»."
+C_BACK = "С возвращением, {name}! Чем помочь?"
+C_SEARCH_HINT = "Напишите модель, артикул или что ищете: «DS-2CD1043», «PoE коммутатор 8 портов», «домофон»."
+C_FOUND = "Нашёл {n}. Показываю первые {k}:"
+C_NOTHING = "Ничего не нашёл по «{q}». Попробуйте другое слово или напишите менеджеру — подберём аналог."
+C_MORE = "Ещё результаты и фильтры — в каталоге."
+C_ADDED = "Добавлено в корзину (позиций: {n})"
+C_NEED_REG = "Сначала отправьте номер — /start"
+C_MY_EMPTY = "Заявок пока нет. Соберите корзину в каталоге и нажмите «Пришлите мне КП» или «Заказать»."
+C_MY_HEAD = "Ваши заявки:"
+C_MANAGER = "Менеджер Софтмонтажа: {name}\n{phone}Напишите в WhatsApp или оставьте заявку из корзины — ответим в рабочее время."
+C_BLOCKED = "Бот вам недоступен. Свяжитесь с нами через сайт: {site}"
+C_HELP = ("Что я умею:\n🛒 Каталог — все товары, корзина и заявка\n🔎 Поиск — напишите модель или что ищете\n"
+          "📄 Мои заявки — статус и коммерческие предложения\n💬 Связаться с менеджером")
+STATUS = {"new": "новая", "work": "в работе", "kp_sent": "КП отправлено", "won": "заказ", "lost": "закрыта"}
+
+
+def product_caption(p):
+    stock = f"✅ В наличии{(' ' + escape(p.stock_label)) if p.stock_label.startswith('>') else ''}" if p.stock else "🕓 Под заказ"
+    price = money(p.price) if p.price else "цена по запросу"
+    return f"<b>{escape(p.brand.name)} {escape(p.title)}</b>\n{escape(p.type)}\n💰 {price} · {stock}"

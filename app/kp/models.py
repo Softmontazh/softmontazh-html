@@ -73,7 +73,7 @@ def firm():
 
 LEAD_KIND = [("kp", "Прислать КП"), ("order", "Заказ")]
 LEAD_STATUS = [("new", "Новая"), ("work", "В работе"), ("kp_sent", "КП отправлено"), ("won", "Заказ"), ("lost", "Отказ")]
-LEAD_SOURCE = [("site", "С сайта"), ("manager", "Менеджер")]
+LEAD_SOURCE = [("site", "С сайта"), ("telegram", "Из Telegram"), ("manager", "Менеджер")]
 
 
 class Lead(models.Model):
@@ -91,6 +91,8 @@ class Lead(models.Model):
     total = models.PositiveIntegerField("Сумма корзины, ₸", default=0)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name="leads", verbose_name="Менеджер")
+    customer = models.ForeignKey("clients.Customer", on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name="leads", verbose_name="Клиент")
     note = models.TextField("Заметка менеджера", blank=True)
     updated = models.DateTimeField(auto_now=True)
 

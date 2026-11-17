@@ -16,6 +16,7 @@ urlpatterns = [
     path("catalog/cart/", kp_views.cart_page, name="cart"),
     path("api/cart/items", kp_views.api_cart_items),
     path("api/cart/lead", kp_views.api_lead),
+    path("", include("clients.urls")),
     path("", include("catalog.urls")),
 ]
 

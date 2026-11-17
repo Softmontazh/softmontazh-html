@@ -7,7 +7,7 @@ from aiogram.types import BotCommand
 
 from . import config, texts
 from .middlewares.auth import AuthMiddleware, ErrorsMiddleware
-from .routers import common, leads, start
+from .routers import clients, common, leads, start
 from .services.outbox import outbox_loop
 
 log = logging.getLogger("tgbot")
@@ -19,7 +19,7 @@ def build():
     for obs in (dp.message, dp.callback_query):
         obs.outer_middleware(AuthMiddleware())
         obs.middleware(ErrorsMiddleware())
-    dp.include_routers(start.router, leads.router, common.router)
+    dp.include_routers(start.router, leads.router, clients.router, common.router)
     return bot, dp
 
 

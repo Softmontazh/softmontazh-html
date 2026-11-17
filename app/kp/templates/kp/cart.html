@@ -16,16 +16,22 @@
           {% csrf_token %}
           <h2>Ваши контакты</h2>
           <p class="kp-hint">Менеджер подтвердит цены и наличие и пришлёт коммерческое предложение.</p>
+          {% if me and me.registered %}
+            <div class="cart-me">Вы: <b>{{ me.name }}</b>, {{ me.display_phone }}<small>Данные из личного кабинета — <a href="/my/">изменить</a></small></div>
+            <label>Компания<input name="company" class="kp-input" maxlength="160" value="{{ me.company }}"></label>
+          {% else %}
           <label>Имя<input name="name" class="kp-input" maxlength="120" autocomplete="name"></label>
           <label>Телефон <b>*</b><input name="phone" class="kp-input" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+7 7__ ___ __ __"></label>
           <label>Email<input name="email" class="kp-input" maxlength="120" type="email" autocomplete="email"></label>
           <label>Компания<input name="company" class="kp-input" maxlength="160" autocomplete="organization"></label>
+          {% endif %}
           <label>Комментарий<textarea name="comment" class="kp-input" rows="3" maxlength="2000" placeholder="Объект, сроки, нужен ли монтаж"></textarea></label>
           <label class="hp" aria-hidden="true">Сайт<input name="website" tabindex="-1" autocomplete="off"></label>
           <p class="cart-err" id="cartErr" hidden></p>
           <button type="submit" class="btn btn--accent cart-btn" data-kind="kp">Пришлите мне КП</button>
           <button type="submit" class="btn btn--outline cart-btn" data-kind="order">Заказать</button>
           <p class="kp-hint">Нажимая кнопку, вы соглашаетесь, что мы свяжемся с вами по указанным контактам.</p>
+          {% if not me %}<p class="kp-hint">Уже оставляли заявки? <a href="/my/login/">Войдите через Telegram</a> — увидите их статус и КП.</p>{% endif %}
           {% if role %}<hr><button type="button" class="btn btn--primary cart-btn" id="toKp">Сделать КП из корзины (для сотрудников)</button>{% endif %}
         </form>
       </aside>
@@ -37,9 +43,9 @@
     <div class="cart-done" id="cartDone" hidden>
       <h2>Заявка отправлена</h2>
       <p id="cartDoneText">Менеджер свяжется с вами в рабочее время. Номер заявки: <b id="leadNo"></b>.</p>
-      <a class="btn btn--outline" href="/catalog/">Вернуться в каталог</a>
+      <a class="btn btn--outline" href="/catalog/">Вернуться в каталог</a>{% if me %} <a class="btn btn--primary" href="/my/">Мои заявки</a>{% endif %}
     </div>
   </div>
 </section>
 {% endblock %}
-{% block scripts %}<script src="/assets/js/cart.js?v=1"></script>{% endblock %}
+{% block scripts %}<script src="/assets/js/cart.js?v=2"></script>{% endblock %}

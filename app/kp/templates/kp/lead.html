@@ -15,6 +15,7 @@
           <tr><td>Email</td><td>{% if lead.email %}<a href="mailto:{{ lead.email }}">{{ lead.email }}</a>{% else %}—{% endif %}</td></tr>
           <tr><td>Компания</td><td>{{ lead.company|default:"—" }}</td></tr>
           <tr><td>Комментарий</td><td>{{ lead.comment|default:"—"|linebreaksbr }}</td></tr>
+          {% if lead.customer %}<tr><td>Клиент в базе</td><td>{{ lead.customer }}{% if lead.customer.phone_verified %} · номер подтверждён Telegram{% endif %}{% if lead.customer.telegram_username %} · <a href="https://t.me/{{ lead.customer.telegram_username }}" target="_blank">@{{ lead.customer.telegram_username }}</a>{% endif %} · заявок: {{ lead.customer.leads.count }}</td></tr>{% endif %}
           <tr><td>Менеджер</td><td id="mgr">{% if lead.manager %}{{ lead.manager.get_full_name|default:lead.manager.username }}{% else %}<i>свободна</i>{% endif %}</td></tr>
         </table>
         <div class="lead-actions">

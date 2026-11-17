@@ -25,7 +25,8 @@ async def start(m: Message, command: CommandObject, sm_user=None):
     if sm_user:
         await m.answer(texts.START_HELLO.format(name=_name(sm_user)))
     else:
-        await m.answer(texts.START_STRANGER.format(site=SITE))
+        from .clients import welcome
+        await welcome(m)
 
 
 @router.message(Command("bind"))

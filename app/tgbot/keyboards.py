@@ -14,4 +14,8 @@ def lead_markup(lead, taken=False):
         msg = quote(f"Здравствуйте{', ' + lead.name if lead.name else ''}! Это Софтмонтаж, по вашей заявке с сайта №{lead.pk}.")
         second.append({"text": texts.BTN_WA, "url": f"https://wa.me/{lead.phone_digits}?text={msg}"})
     rows.append(second)
+    cust = getattr(lead, "customer", None)
+    if cust and cust.telegram_id:
+        url = f"https://t.me/{cust.telegram_username}" if cust.telegram_username else f"tg://user?id={cust.telegram_id}"
+        rows.append([{"text": texts.BTN_TG_CLIENT, "url": url}])
     return {"inline_keyboard": rows}

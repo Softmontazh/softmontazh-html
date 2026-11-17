@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "catalog",
     "kp",
     "tgbot",
+    "clients",
 ]
 
 MIDDLEWARE = [
@@ -52,6 +53,7 @@ TEMPLATES = [{
         "django.template.context_processors.request",
         "django.contrib.auth.context_processors.auth",
         "django.contrib.messages.context_processors.messages",
+        "clients.context.customer",
     ]},
 }]
 WSGI_APPLICATION = "smsite.wsgi.application"

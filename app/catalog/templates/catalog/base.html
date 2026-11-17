@@ -24,15 +24,18 @@
   <link rel="stylesheet" href="/brand/site/colors.css?v=1">
   <link rel="stylesheet" href="/assets/css/site.css?v=3">
   <link rel="stylesheet" href="/assets/css/catalog.css?v=7">
-  <link rel="stylesheet" href="/assets/css/kp.css?v=1">
+  <link rel="stylesheet" href="/assets/css/kp.css?v=2">
   {% block head %}{% endblock %}
 </head>
 <body>
   <header id="site-header" class="site-header"></header>
   {% include "catalog/_staffbar.html" %}
+  {% if me and not role %}<div class="mebar"><div class="container mebar__in"><span>👋 {{ me.name|default:me.display_phone }}</span><a href="/my/">Личный кабинет</a></div></div>{% endif %}
   <main>{% block main %}{% endblock %}</main>
   <footer id="site-footer" class="site-footer"></footer>
-  <script src="/assets/js/site.js?v=12"></script>
+  <script>window.SM_CUSTOMER = {{ me_json|safe }};</script>
+  <script src="/assets/js/site.js?v=13"></script>
+  <script src="/assets/js/tgapp.js?v=1"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
