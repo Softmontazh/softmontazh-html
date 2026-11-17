@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.urls import include, path
 
-admin.site.site_header = "Софтмонтаж — каталог"
+from django.conf import settings as _s  # noqa: E402
+
+admin.site.site_header = f"Софтмонтаж — каталог · версия {_s.APP_VERSION}"
 admin.site.site_title = "Софтмонтаж"
 admin.site.index_title = "Управление каталогом"
 

@@ -10,6 +10,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SITE_ROOT = BASE_DIR.parent  # корень статического сайта (index.html, assets/, brand/)
 
 env = os.environ.get
+
+# Версия — дата коммита и короткий хеш, пишет deploy/update.sh в файл VERSION в корне сайта (в git не попадает)
+try:
+    APP_VERSION = (SITE_ROOT / "VERSION").read_text(encoding="utf-8").strip() or "dev"
+except OSError:
+    APP_VERSION = "dev"  # локально
 SECRET_KEY = env("SM_SECRET_KEY", "dev-only-not-secret")
 DEBUG = env("SM_DEBUG", "1" if not env("SM_SECRET_KEY") else "0") == "1"
 ALLOWED_HOSTS = [h for h in env("SM_ALLOWED_HOSTS", "softmontazh.kz,localhost,127.0.0.1").split(",") if h]
