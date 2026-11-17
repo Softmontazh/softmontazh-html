@@ -13,7 +13,7 @@ def manager_name(u):
 def take(lead_id, user):
     """Взять заявку. Идемпотентно: второй раз — «уже у …». Возвращает (lead|None, сообщение, изменилась_ли)."""
     with transaction.atomic():
-        lead = Lead.objects.select_for_update().select_related("manager").filter(pk=lead_id).first()
+        lead = Lead.objects.select_for_update(of=("self",)).select_related("manager").filter(pk=lead_id).first()
         if lead is None:
             return None, texts.LEAD_GONE, False
         if lead.manager_id == user.pk:

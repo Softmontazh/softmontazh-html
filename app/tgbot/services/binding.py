@@ -19,7 +19,7 @@ def new_token(user, purpose="user"):
 
 def _take(token, purpose):
     with transaction.atomic():
-        bt = BindToken.objects.select_for_update().filter(token=token, purpose=purpose, used=False,
+        bt = BindToken.objects.select_for_update(of=("self",)).filter(token=token, purpose=purpose, used=False,
                                                           expires__gt=timezone.now()).select_related("user").first()
         if not bt or not bt.user.is_active:
             return None

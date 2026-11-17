@@ -44,6 +44,9 @@ class KPFlowTest(TestCase):
         self.assertEqual(r.status_code, 400)
         self.post(self.client, "/api/cart/lead", {"phone": "87011112233", "website": "spam", "items": []})
         self.assertEqual(Lead.objects.count(), 0)
+        r = self.post(self.client, "/api/cart/lead", {"phone": "87011112233", "items": []})
+        self.assertEqual(r.status_code, 400)  # пустая корзина
+        self.assertEqual(Lead.objects.count(), 0)
 
     def test_manager_floor_enforced_owner_can(self):
         lead = self.lead()

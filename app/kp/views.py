@@ -89,6 +89,8 @@ def api_lead(request):
         if p:
             items.append({"slug": slug, "model": p.title, "brand": p.brand.name, "type": p.type, "qty": q, "price": p.price})
             total += q * p.price
+    if not items:
+        return JsonResponse({"error": "Корзина пуста — добавьте товары из каталога."}, status=400)
     lead = Lead.objects.create(
         kind="order" if d.get("kind") == "order" else "kp", source="site", name=name, phone=phone, email=email,
         company=str(d.get("company", "")).strip()[:160], comment=str(d.get("comment", "")).strip()[:2000],
