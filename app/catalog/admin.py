@@ -3,7 +3,9 @@ from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils.html import format_html
 
-from .models import Brand, Category, ImportRun, Product, SiteSettings, recalc_prices
+from django.db.models import Count
+
+from .models import Brand, Category, ImportRun, Node, Product, SiteSettings, recalc_prices
 
 
 @admin.register(SiteSettings)
@@ -35,7 +37,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
 class CategoryInline(admin.TabularInline):
     model = Category
-    fields = ["name", "enabled", "sort", "markup_percent", "n_products"]
+    fields = ["name", "enabled", "sort", "markup_percent", "purchase_discount", "n_products"]
     readonly_fields = ["name", "n_products"]
     extra = 0
     can_delete = False
@@ -48,9 +50,9 @@ class CategoryInline(admin.TabularInline):
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ["name", "enabled", "sort", "markup_percent", "n_products"]
-    list_editable = ["enabled", "sort", "markup_percent"]
-    fields = ["name", "slug", "enabled", "sort", "markup_percent"]
+    list_display = ["name", "enabled", "sort", "markup_percent", "purchase_discount", "n_products"]
+    list_editable = ["enabled", "sort", "markup_percent", "purchase_discount"]
+    fields = ["name", "slug", "enabled", "sort", "markup_percent", "purchase_discount"]
     readonly_fields = ["slug"]
     inlines = [CategoryInline]
 
@@ -60,7 +62,7 @@ class BrandAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        if "markup_percent" in form.changed_data:
+        if {"markup_percent", "purchase_discount"} & set(form.changed_data):
             recalc_prices(obj.products.all())
 
     def save_formset(self, request, form, formset, change):
@@ -76,11 +78,11 @@ class BrandAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "brand", "enabled", "sort", "markup_percent"]
-    list_editable = ["enabled", "sort", "markup_percent"]
+    list_display = ["name", "brand", "enabled", "sort", "markup_percent", "purchase_discount"]
+    list_editable = ["enabled", "sort", "markup_percent", "purchase_discount"]
     list_filter = ["brand", "enabled"]
     search_fields = ["name"]
-    fields = ["brand", "name", "slug", "enabled", "sort", "markup_percent"]
+    fields = ["brand", "name", "slug", "enabled", "sort", "markup_percent", "purchase_discount"]
     readonly_fields = ["brand", "name", "slug"]
 
     def save_model(self, request, obj, form, change):
@@ -96,7 +98,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ["thumb", "model", "brand", "category", "base_price", "price", "stock_label_", "is_active", "hidden"]
+    list_display = ["thumb", "model", "brand", "category", "base_price", "price", "purchase_price", "margin", "stock_label_", "is_active", "hidden"]
     list_display_links = ["thumb", "model"]
     list_editable = ["hidden"]
     list_filter = ["brand", "is_active", "hidden", ("price_override", admin.EmptyFieldListFilter), "category"]
@@ -106,9 +108,10 @@ class ProductAdmin(admin.ModelAdmin):
     actions = ["hide", "show"]
     readonly_fields = ["barlau_id", "model", "name", "type", "brand", "category", "node", "subpath", "description", "image_preview",
                        "barlau_link", "article", "gtin", "warranty", "box_qty", "base_price", "price", "stock", "stock_label",
-                       "is_active", "last_seen", "created", "updated", "site_link"]
+                       "is_active", "last_seen", "created", "updated", "site_link", "purchase_price", "purchase_source", "margin"]
     fieldsets = [
         ("На сайте", {"fields": ["site_link", "hidden", "title_override", "price_override", "description_override"]}),
+        ("Закупка (видите только вы)", {"fields": ["purchase_price", "purchase_source", "margin", "purchase_override"]}),
         ("Из выгрузки Barlau (обновляется автоматически)", {"fields": [
             "image_preview", "model", "name", "type", "brand", "category", "node", "subpath", "base_price", "price", "stock", "stock_label",
             "warranty", "article", "gtin", "box_qty", "description", "barlau_id", "barlau_link", "is_active", "last_seen", "created", "updated"]}),
@@ -117,6 +120,13 @@ class ProductAdmin(admin.ModelAdmin):
     @admin.display(description="")
     def thumb(self, obj):
         return format_html('<img src="{}" style="width:44px;height:44px;object-fit:contain" referrerpolicy="no-referrer" loading="lazy">', obj.image_url) if obj.image_url else "—"
+
+    @admin.display(description="Маржа")
+    def margin(self, obj):
+        if not obj.purchase_price or not obj.price:
+            return "—"
+        m = obj.price - obj.purchase_price
+        return f"{m:,} ₸ · {m * 100 / obj.price:.0f}%".replace(",", " ")
 
     @admin.display(description="Остаток", ordering="stock")
     def stock_label_(self, obj):
@@ -148,6 +158,64 @@ class ProductAdmin(admin.ModelAdmin):
     @admin.action(description="Показывать на сайте")
     def show(self, request, qs):
         self.message_user(request, f"Показывается: {qs.update(hidden=False)}")
+
+
+@admin.register(Node)
+class NodeAdmin(admin.ModelAdmin):
+    """Дерево разделов Barlau — здесь задаётся скидка закупки по разделам и подразделам."""
+    list_display = ["tree_name", "purchase_discount", "effective", "n_products"]
+    list_editable = ["purchase_discount"]
+    list_display_links = None
+    search_fields = ["name"]
+    list_filter = ["depth"]
+    list_per_page = 200
+    ordering = ["path"]
+    fields = ["name", "purchase_discount"]
+    readonly_fields = ["name"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        nodes = {n.pk: n for n in Node.objects.only("pk", "parent_id", "barlau_id", "name", "purchase_discount", "path")}
+        self._eff, self._cnt = {}, {}
+        for n in nodes.values():
+            cur, eff = n, None
+            while cur is not None:
+                if cur.purchase_discount is not None:
+                    eff = (cur.purchase_discount, cur.name if cur.pk != n.pk else "")
+                    break
+                cur = nodes.get(cur.parent_id)
+            self._eff[n.pk] = eff
+        direct = dict(Product.objects.filter(is_active=True).order_by().values("node_id").annotate(n=Count("id")).values_list("node_id", "n"))
+        for pk, c in direct.items():
+            cur = nodes.get(pk)
+            while cur is not None:
+                self._cnt[cur.pk] = self._cnt.get(cur.pk, 0) + c
+                cur = nodes.get(cur.parent_id)
+        resp = super().changelist_view(request, extra_context)
+        if request.method == "POST" and "_save" in request.POST:
+            recalc_prices()
+        return resp
+
+    @admin.display(description="Раздел", ordering="path")
+    def tree_name(self, obj):
+        return format_html('<span style="padding-left:{}px">{}{}</span>', obj.depth * 18,
+                           "" if obj.depth == 0 else "└ ", obj.name)
+
+    @admin.display(description="Действует")
+    def effective(self, obj):
+        e = getattr(self, "_eff", {}).get(obj.pk)
+        if not e:
+            return "— (бренд или не задана)"
+        return f"−{e[0].normalize():f}%" + (f" от «{e[1]}»" if e[1] else "")
+
+    @admin.display(description="Товаров")
+    def n_products(self, obj):
+        return getattr(self, "_cnt", {}).get(obj.pk, 0)
 
 
 @admin.register(ImportRun)

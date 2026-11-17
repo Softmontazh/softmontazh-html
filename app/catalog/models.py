@@ -90,6 +90,8 @@ class Brand(models.Model):
     sort = models.PositiveIntegerField("Порядок", default=100)
     markup_percent = models.DecimalField("Наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
         help_text="Пусто — как в общих настройках.")
+    purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
 
     class Meta:
         ordering = ["sort", "name"]
@@ -107,6 +109,8 @@ class Category(models.Model):
     sort = models.PositiveIntegerField("Порядок", default=100)
     markup_percent = models.DecimalField("Наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
         help_text="Пусто — как у бренда.")
+    purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
 
     class Meta:
         ordering = ["brand__sort", "brand__name", "sort", "name"]
@@ -125,10 +129,12 @@ class Node(models.Model):
     path = models.CharField("Путь", max_length=200, db_index=True, editable=False, help_text="/id/id/id/ — для выборки ветки")
     depth = models.PositiveSmallIntegerField("Уровень", default=0, editable=False)
     sort = models.PositiveIntegerField("Порядок", default=0)
+    purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
 
     class Meta:
         ordering = ["sort"]
-        verbose_name, verbose_name_plural = "узел дерева", "Дерево каталога"
+        verbose_name, verbose_name_plural = "раздел дерева", "Дерево разделов (скидки закупки)"
 
     def __str__(self):
         return self.name
@@ -174,6 +180,10 @@ class Product(models.Model):
     description_override = models.TextField("Своё описание", blank=True)
     price_override = models.PositiveIntegerField("Своя цена, ₸", null=True, blank=True,
         help_text="Если задана — показывается вместо расчётной.")
+    purchase_override = models.PositiveIntegerField("Моя закупка, ₸ (точная)", null=True, blank=True,
+        help_text="Если знаете точную закупочную цену этого товара — впишите, она важнее скидок разделов.")
+    purchase_price = models.PositiveIntegerField("Закупка, ₸ (расчёт)", null=True, blank=True, editable=False)
+    purchase_source = models.CharField("Откуда закупка", max_length=200, blank=True, editable=False)
 
     created = models.DateTimeField("Добавлен", auto_now_add=True)
     updated = models.DateTimeField("Изменён", auto_now=True)
@@ -218,22 +228,53 @@ def calc_price(base, settings, brand=None, category=None, override=None):
     return max(int((val / r).to_integral_value()) * r, 0)
 
 
+def purchase_for(p, brand, cat, nodes_by_pk, nodes_by_bid):
+    """Закупка: своя цена товара → ближайший узел дерева со скидкой → раздел → бренд. Возвращает (цена|None, откуда)."""
+    if p.purchase_override:
+        return int(p.purchase_override), "указана у товара"
+    if not p.base_price:
+        return None, ""
+    disc, src = None, ""
+    n = nodes_by_pk.get(p.node_id)
+    if n is not None:
+        for bid in reversed([int(x) for x in n.path.strip("/").split("/") if x.isdigit()]):
+            nn = nodes_by_bid.get(bid)
+            if nn is not None and nn.purchase_discount is not None:
+                disc, src = nn.purchase_discount, f"раздел «{nn.name}»"
+                break
+    if disc is None and cat is not None and cat.purchase_discount is not None:
+        disc, src = cat.purchase_discount, f"раздел «{cat.name}»"
+    if disc is None and brand is not None and brand.purchase_discount is not None:
+        disc, src = brand.purchase_discount, f"бренд {brand.name}"
+    if disc is None:
+        return None, ""
+    val = Decimal(p.base_price) * (Decimal(100) - disc) / Decimal(100)
+    return int(val.to_integral_value()), f"−{disc.normalize():f}% · {src}"
+
+
 def recalc_prices(products=None):
-    """Пересчитать цену на сайте (после смены наценки или импорта)."""
+    """Пересчитать цену на сайте и закупку (после смены наценки/скидок или импорта)."""
     s = SiteSettings.get()
     brands = {b.pk: b for b in Brand.objects.all()}
     cats = {c.pk: c for c in Category.objects.all()}
+    nodes = list(Node.objects.only("pk", "barlau_id", "name", "path", "purchase_discount"))
+    nodes_by_pk = {n.pk: n for n in nodes}
+    nodes_by_bid = {n.barlau_id: n for n in nodes}
     qs = products if products is not None else Product.objects.all()
+    fields = ["price", "purchase_price", "purchase_source"]
     batch = []
-    for p in qs.only("pk", "base_price", "price", "price_override", "brand_id", "category_id").iterator(chunk_size=1000):
-        new = calc_price(p.base_price, s, brands.get(p.brand_id), cats.get(p.category_id), p.price_override)
-        if new != p.price:
-            p.price = new
+    for p in qs.only("pk", "base_price", "price", "price_override", "purchase_override", "purchase_price",
+                     "purchase_source", "brand_id", "category_id", "node_id").iterator(chunk_size=1000):
+        b, c = brands.get(p.brand_id), cats.get(p.category_id)
+        new = calc_price(p.base_price, s, b, c, p.price_override)
+        pp, src = purchase_for(p, b, c, nodes_by_pk, nodes_by_bid)
+        if (new, pp, src) != (p.price, p.purchase_price, p.purchase_source):
+            p.price, p.purchase_price, p.purchase_source = new, pp, src
             batch.append(p)
         if len(batch) >= 500:
-            Product.objects.bulk_update(batch, ["price"]); batch = []
+            Product.objects.bulk_update(batch, fields); batch = []
     if batch:
-        Product.objects.bulk_update(batch, ["price"])
+        Product.objects.bulk_update(batch, fields)
 
 
 class ImportRun(models.Model):
