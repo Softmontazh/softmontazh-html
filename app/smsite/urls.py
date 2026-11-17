@@ -8,7 +8,7 @@ from django.conf import settings as _s  # noqa: E402
 admin.site.site_header = f"Софтмонтаж — каталог · версия {_s.APP_VERSION}"
 admin.site.site_title = "Софтмонтаж"
 admin.site.site_url = "/catalog/"  # ссылка «Открыть сайт» в админке ведёт в каталог
-admin.site.index_title = "Управление каталогом"
+admin.site.index_title = "Управление каталогом · Кабинет менеджера и Telegram: softmontazh.kz/kp/"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
