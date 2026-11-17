@@ -40,6 +40,7 @@
           </div>
           {% endif %}
           <p class="pp__note">{% if p.price %}{{ s.price_note }}{% else %}Уточним цену и срок поставки в течение дня.{% endif %}</p>
+          <div class="pp-cart" id="ppCart" data-slug="{{ p.slug }}"></div>
           <div class="pp__actions">
             <a class="btn btn--accent" href="{{ wa }}" target="_blank" rel="noopener">Заказать в WhatsApp</a>
             {% if s.phone_visible %}<a class="btn btn--outline" href="{{ s.tel }}">Позвонить</a>{% endif %}
@@ -81,4 +82,24 @@
       {% endif %}
     </div>
   </section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const box = document.getElementById("ppCart"), slug = box.dataset.slug, C = window.SMCart;
+  const paint = () => {
+    const q = C.get()[slug] || 0;
+    box.innerHTML = q
+      ? `<span class="qty"><button type="button" data-d="-1">−</button><input type="number" min="0" value="${q}"><button type="button" data-d="1">+</button></span> <a class="btn btn--primary" href="/catalog/cart/">В корзине — оформить</a>`
+      : `<button type="button" class="btn btn--primary" data-add>В корзину</button>`;
+  };
+  box.addEventListener("click", (e) => {
+    if (e.target.closest("[data-add]")) C.add(slug, 1);
+    const d = e.target.closest("[data-d]"); if (d) C.add(slug, +d.dataset.d);
+    paint();
+  });
+  box.addEventListener("change", (e) => { C.qty(slug, Math.max(parseInt(e.target.value, 10) || 0, 0)); paint(); });
+  paint();
+})();
+</script>
 {% endblock %}

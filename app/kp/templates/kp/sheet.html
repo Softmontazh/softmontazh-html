@@ -116,7 +116,7 @@
         {% for it in s.items %}
         <tr>
           <td>{{ it.n }}</td>
-          {% if full %}<td class="ph">{% if it.img %}<img src="{{ it.img }}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='&lt;div class=&quot;noimg&quot;&gt;&lt;/div&gt;'">{% else %}<div class="noimg"></div>{% endif %}</td>{% endif %}
+          {% if full %}<td class="ph">{% if it.img %}<img src="{{ it.img }}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='&lt;div class=&quot;noimg&quot;&gt;&lt;/div&gt;'">{% elif not it.work %}<div class="noimg"></div>{% endif %}</td>{% endif %}
           <td class="nm"><b>{{ it.name }}</b>{% if it.type %} <span class="tp">{{ it.type }}</span>{% endif %}{% if full and it.desc %}<small>{{ it.desc }}</small>{% endif %}</td>
           <td class="num">{{ it.qty }} {{ it.unit }}</td>
           {% if not t.hide_prices %}<td class="num">{{ it.price|money }}</td><td class="num sum">{{ it.sum|money }}</td>{% endif %}

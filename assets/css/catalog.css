@@ -186,3 +186,10 @@ a.pcard { text-decoration: none; color: inherit; }
 .staffbox td { padding: 3px 0; vertical-align: top; }
 .staffbox td:first-child { color: var(--sm-muted); width: 40%; }
 .staffbox small { color: var(--sm-muted); }
+
+/* карточка: ссылка + корзина */
+.pcard { cursor: default; }
+.pcard__link { display: flex; flex-direction: column; flex: 1; text-decoration: none; color: inherit; }
+.pcard .qty { width: 100%; justify-content: space-between; }
+.pcard .qty input { flex: 1; }
+@media (max-width: 620px) { .pcard__link { display: contents; } .pcard__cart { grid-column: 2; } }

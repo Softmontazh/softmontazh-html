@@ -1,0 +1,45 @@
+{% extends "catalog/base.html" %}
+{% block title %}Корзина — Софтмонтаж{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block main %}
+<section class="section cat-section cart">
+  <div class="container">
+    <nav class="pp-crumbs"><a href="/catalog/">Каталог</a> <span>›</span> <span>Корзина</span></nav>
+    <h1 class="cart-h1">Корзина</h1>
+    <div class="cart-grid" id="cartGrid">
+      <div class="cart-list-wrap">
+        <div id="cartList" class="cart-list"></div>
+        <div class="cart-total" id="cartTotal"></div>
+      </div>
+      <aside class="cart-form" id="cartFormBox">
+        <form id="cartForm" autocomplete="on" novalidate>
+          {% csrf_token %}
+          <h2>Ваши контакты</h2>
+          <p class="kp-hint">Менеджер подтвердит цены и наличие и пришлёт коммерческое предложение.</p>
+          <label>Имя<input name="name" class="kp-input" maxlength="120" autocomplete="name"></label>
+          <label>Телефон <b>*</b><input name="phone" class="kp-input" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="+7 7__ ___ __ __"></label>
+          <label>Email<input name="email" class="kp-input" maxlength="120" type="email" autocomplete="email"></label>
+          <label>Компания<input name="company" class="kp-input" maxlength="160" autocomplete="organization"></label>
+          <label>Комментарий<textarea name="comment" class="kp-input" rows="3" maxlength="2000" placeholder="Объект, сроки, нужен ли монтаж"></textarea></label>
+          <label class="hp" aria-hidden="true">Сайт<input name="website" tabindex="-1" autocomplete="off"></label>
+          <p class="cart-err" id="cartErr" hidden></p>
+          <button type="submit" class="btn btn--accent cart-btn" data-kind="kp">Пришлите мне КП</button>
+          <button type="submit" class="btn btn--outline cart-btn" data-kind="order">Заказать</button>
+          <p class="kp-hint">Нажимая кнопку, вы соглашаетесь, что мы свяжемся с вами по указанным контактам.</p>
+          {% if role %}<hr><button type="button" class="btn btn--primary cart-btn" id="toKp">Сделать КП из корзины (для сотрудников)</button>{% endif %}
+        </form>
+      </aside>
+    </div>
+    <div class="cart-empty" id="cartEmpty" hidden>
+      <p>В корзине пока пусто.</p>
+      <a class="btn btn--accent" href="/catalog/">Перейти в каталог</a>
+    </div>
+    <div class="cart-done" id="cartDone" hidden>
+      <h2>Заявка отправлена</h2>
+      <p id="cartDoneText">Менеджер свяжется с вами в рабочее время. Номер заявки: <b id="leadNo"></b>.</p>
+      <a class="btn btn--outline" href="/catalog/">Вернуться в каталог</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/assets/js/cart.js?v=1"></script>{% endblock %}

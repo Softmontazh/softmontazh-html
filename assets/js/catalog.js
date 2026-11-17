@@ -87,15 +87,24 @@
     if (x.room_pct != null) parts.push(`уступить до ${x.room_pct}%`);
     return `<div class="pcard__staff" title="Видят только сотрудники">${parts.join(" · ")}</div>`;
   };
+  const cartCtl = (slug) => {
+    const q = (window.SMCart && window.SMCart.get()[slug]) || 0;
+    return q
+      ? `<span class="qty" data-cart="${esc(slug)}"><button type="button" data-d="-1">−</button><input type="number" min="0" value="${q}"><button type="button" data-d="1">+</button></span>`
+      : `<button type="button" class="btn btn--outline btn--sm addcart" data-cart="${esc(slug)}" data-add>В корзину</button>`;
+  };
   const card = (p) => `
-    <a class="pcard" href="/catalog/${esc(p.slug)}/">
-      <div class="pcard__img">${p.img ? `<img src="${esc(p.img)}" alt="${esc(p.brand + " " + p.model)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='${NOIMG.replace(/"/g, "&quot;")}'">` : NOIMG}</div>
-      <div class="pcard__brand">${esc(p.brand)}</div>
-      <div class="pcard__model">${esc(p.model)}</div>
-      <div class="pcard__type">${esc(p.type)}</div>
+    <article class="pcard">
+      <a class="pcard__link" href="/catalog/${esc(p.slug)}/">
+        <div class="pcard__img">${p.img ? `<img src="${esc(p.img)}" alt="${esc(p.brand + " " + p.model)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='${NOIMG.replace(/"/g, "&quot;")}'">` : NOIMG}</div>
+        <div class="pcard__brand">${esc(p.brand)}</div>
+        <div class="pcard__model">${esc(p.model)}</div>
+        <div class="pcard__type">${esc(p.type)}</div>
+      </a>
       ${staffLine(p)}
       <div class="pcard__foot">${p.price > 0 ? `<div class="pcard__price">${money(p.price)}</div>` : `<div class="pcard__price is-req">Цена по запросу</div>`}${stockHtml(p)}</div>
-    </a>`;
+      <div class="pcard__cart" data-slot="${esc(p.slug)}">${cartCtl(p.slug)}</div>
+    </article>`;
 
   let req = 0;
   async function load(append) {
@@ -151,6 +160,18 @@
   $("instock").addEventListener("change", (e) => { st.instock = e.target.checked; reload(); });
   $("sort").addEventListener("change", (e) => { st.sort = e.target.value; reload(); });
   $("more").addEventListener("click", () => { st.page += 1; load(true); });
+
+  // корзина в карточках
+  const repaintSlot = (slug) => document.querySelectorAll(`[data-slot="${CSS.escape(slug)}"]`).forEach((el) => { el.innerHTML = cartCtl(slug); });
+  $("grid").addEventListener("click", (e) => {
+    const add = e.target.closest("[data-add]"), d = e.target.closest("[data-d]");
+    if (add) { window.SMCart.add(add.dataset.cart, 1); repaintSlot(add.dataset.cart); }
+    else if (d) { const slug = d.closest("[data-cart]").dataset.cart; window.SMCart.add(slug, +d.dataset.d); repaintSlot(slug); }
+  });
+  $("grid").addEventListener("change", (e) => {
+    const box = e.target.closest(".qty[data-cart]"); if (!box) return;
+    window.SMCart.qty(box.dataset.cart, Math.max(parseInt(e.target.value, 10) || 0, 0)); repaintSlot(box.dataset.cart);
+  });
 
   reload();
 })();

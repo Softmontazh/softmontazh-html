@@ -42,6 +42,7 @@
     </a>
     <nav class="nav" aria-label="Основное меню">${navLinks("")}</nav>
     <a class="site-header__phone" href="${PHONE_HREF}">${PHONE}</a>
+    <a class="cart-link" href="${B}catalog/cart/" aria-label="Корзина" data-cart-link hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.6l2.4 12h11.2l2.2-8.5H6.2"/></svg><b data-cart-count>0</b></a>
     <a class="btn btn--accent btn--sm" href="${WA}" target="_blank" rel="noopener">Оставить заявку</a>
     <button class="burger" type="button" aria-label="Меню" aria-expanded="false" aria-controls="mobile-menu"><span></span></button>
   </div>
@@ -84,8 +85,23 @@
     </div>
   </div>`;
 
+  // --- корзина (в браузере посетителя): { slug: количество } ---
+  window.SMCart = {
+    get() { try { return JSON.parse(localStorage.getItem("sm_cart") || "{}") || {}; } catch (e) { return {}; } },
+    set(c) { try { localStorage.setItem("sm_cart", JSON.stringify(c)); } catch (e) { /* нет хранилища */ } this.paint(); },
+    add(slug, n = 1) { const c = this.get(); c[slug] = Math.max((c[slug] || 0) + n, 0); if (!c[slug]) delete c[slug]; this.set(c); return c[slug] || 0; },
+    qty(slug, n) { const c = this.get(); if (n > 0) c[slug] = n; else delete c[slug]; this.set(c); },
+    count() { return Object.keys(this.get()).length; },
+    paint() {
+      const n = this.count();
+      document.querySelectorAll("[data-cart-count]").forEach((el) => { el.textContent = n; el.hidden = !n; });
+      document.querySelectorAll("[data-cart-link]").forEach((el) => { el.hidden = !n && !/\/catalog/.test(location.pathname); });
+    },
+  };
+  window.addEventListener("storage", (e) => { if (e.key === "sm_cart") window.SMCart.paint(); });
+
   const h = document.getElementById("site-header");
-  if (h) { h.className = "site-header"; h.innerHTML = header; }
+  if (h) { h.className = "site-header"; h.innerHTML = header; window.SMCart.paint(); }
   const f = document.getElementById("site-footer");
   if (f) { f.className = "site-footer"; f.innerHTML = footer; }
 

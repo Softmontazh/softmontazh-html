@@ -1,0 +1,59 @@
+{% extends "catalog/base.html" %}{% load catalog_tags %}
+{% block title %}Заявка №{{ lead.pk }} — Софтмонтаж{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block main %}
+<section class="section cat-section cab">
+  <div class="container">
+    <nav class="pp-crumbs"><a href="/kp/">Кабинет</a> <span>›</span> <span>Заявка №{{ lead.pk }}</span></nav>
+    <div class="lead-grid">
+      <div class="kp-card">
+        <div class="cab-head"><h1 class="cart-h1">Заявка №{{ lead.pk }}</h1><span class="st st-{{ lead.status }}" id="stBadge">{{ lead.get_status_display }}</span></div>
+        <p class="kp-hint">{{ lead.created|date:"d.m.Y H:i" }} · {% if lead.source == "manager" %}создана менеджером{% else %}с сайта — «{{ lead.get_kind_display }}»{% endif %}</p>
+        <table class="lead-info">
+          <tr><td>Имя</td><td>{{ lead.name|default:"—" }}</td></tr>
+          <tr><td>Телефон</td><td>{% if lead.phone %}<a href="tel:+{{ lead.phone_digits }}">{{ lead.phone }}</a>{% else %}—{% endif %}</td></tr>
+          <tr><td>Email</td><td>{% if lead.email %}<a href="mailto:{{ lead.email }}">{{ lead.email }}</a>{% else %}—{% endif %}</td></tr>
+          <tr><td>Компания</td><td>{{ lead.company|default:"—" }}</td></tr>
+          <tr><td>Комментарий</td><td>{{ lead.comment|default:"—"|linebreaksbr }}</td></tr>
+          <tr><td>Менеджер</td><td id="mgr">{% if lead.manager %}{{ lead.manager.get_full_name|default:lead.manager.username }}{% else %}<i>свободна</i>{% endif %}</td></tr>
+        </table>
+        <div class="lead-actions">
+          {% if wa %}<a class="btn btn--accent btn--sm" href="{{ wa }}" target="_blank" rel="noopener">Написать в WhatsApp</a>{% endif %}
+          {% if not lead.manager %}<button class="btn btn--outline btn--sm" data-take>Взять в работу</button>{% endif %}
+          <button class="btn btn--primary btn--sm" id="mkKp">Составить КП из заявки</button>
+        </div>
+        <div class="kp-label">Статус</div>
+        <select id="status" class="kp-input">{% for k, v in statuses %}<option value="{{ k }}"{% if k == lead.status %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+        <div class="kp-label">Заметка (клиент не видит)</div>
+        <textarea id="note" class="kp-input" rows="3">{{ lead.note }}</textarea>
+        <p class="kp-hint" id="saved"></p>
+      </div>
+      <div class="kp-card">
+        <h2 class="kp-h2">Что в корзине</h2>
+        <table class="cab-table">
+          <thead><tr><th>Товар</th><th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Сумма</th></tr></thead>
+          <tbody>{% for i in lead.items %}<tr><td>{% if i.slug %}<a href="/catalog/{{ i.slug }}/" target="_blank">{{ i.brand }} {{ i.model }}</a>{% else %}{{ i.model }}{% endif %}<small>{{ i.type }}</small></td><td class="num">{{ i.qty }}</td><td class="num">{{ i.price|money }}</td><td class="num">{% widthratio i.price 1 i.qty as s %}{{ s|money }}</td></tr>
+          {% empty %}<tr><td colspan="4" class="cab-empty">Пусто</td></tr>{% endfor %}</tbody>
+          <tfoot><tr><td colspan="3">Итого по рознице</td><td class="num"><b>{{ lead.total|money }}</b></td></tr></tfoot>
+        </table>
+        {% if kps %}<h2 class="kp-h2" style="margin-top:18px">КП по заявке</h2>
+          <ul class="lead-kps">{% for k in kps %}<li><a href="/kp/{{ k.pk }}/">{{ k.code }}</a> · {{ k.date|date:"d.m.Y" }} · <span class="st st-{{ k.status }}">{{ k.get_status_display }}</span></li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "";
+  const post = (url, d) => fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf }, body: JSON.stringify(d) }).then((r) => r.json());
+  const id = {{ lead.pk }};
+  const saved = (t) => { document.getElementById("saved").textContent = t; };
+  document.getElementById("status").addEventListener("change", (e) => post(`/kp/api/leads/${id}`, { status: e.target.value }).then(() => { saved("Статус сохранён"); document.getElementById("stBadge").textContent = e.target.selectedOptions[0].text; }));
+  let t; document.getElementById("note").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => post(`/kp/api/leads/${id}`, { note: e.target.value }).then(() => saved("Заметка сохранена")), 600); });
+  document.querySelector("[data-take]")?.addEventListener("click", () => post(`/kp/api/leads/${id}`, { take: true }).then(() => location.reload()));
+  document.getElementById("mkKp").addEventListener("click", () => post(`/kp/api/leads/${id}/kp`, {}).then((d) => { if (d.url) location.href = d.url; }));
+})();
+</script>
+{% endblock %}

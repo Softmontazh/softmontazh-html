@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
 
+from kp import views as kp_views
+
 from django.conf import settings as _s  # noqa: E402
 
 admin.site.site_header = f"Софтмонтаж — каталог · версия {_s.APP_VERSION}"
@@ -11,6 +13,9 @@ admin.site.index_title = "Управление каталогом"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("kp/", include("kp.urls")),
+    path("catalog/cart/", kp_views.cart_page, name="cart"),
+    path("api/cart/items", kp_views.api_cart_items),
+    path("api/cart/lead", kp_views.api_lead),
     path("", include("catalog.urls")),
 ]
 

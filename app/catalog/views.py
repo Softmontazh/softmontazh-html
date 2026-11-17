@@ -138,6 +138,8 @@ def api_products(request):
         qs = qs.filter(brand__slug=g["brand"])
         if g.get("cat"):
             qs = qs.filter(category__slug=g["cat"])
+    if g.get("slugs"):
+        qs = qs.filter(slug__in=[x for x in g["slugs"].split(",") if x][:100])
     if (g.get("node") or "").isdigit():
         node = Node.objects.filter(barlau_id=int(g["node"])).first()
         if node:

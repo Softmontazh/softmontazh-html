@@ -1,0 +1,42 @@
+{% extends "catalog/base.html" %}{% load catalog_tags %}
+{% block title %}Кабинет менеджера — Софтмонтаж{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block main %}
+<section class="section cat-section cab">
+  <div class="container">
+    <div class="cab-head">
+      <h1 class="cart-h1">Кабинет менеджера</h1>
+      <div class="cab-actions"><a class="btn btn--outline btn--sm" href="/catalog/">Каталог</a><a class="btn btn--primary btn--sm" href="/catalog/cart/">Корзина → новое КП</a></div>
+    </div>
+    <nav class="cab-tabs">
+      <a href="?tab=new" class="{% if tab == 'new' %}is-on{% endif %}">Новые заявки{% if counts.new %} <b>{{ counts.new }}</b>{% endif %}</a>
+      <a href="?tab=work" class="{% if tab == 'work' %}is-on{% endif %}">В работе{% if counts.work %} <b>{{ counts.work }}</b>{% endif %}</a>
+      <a href="?tab=done" class="{% if tab == 'done' %}is-on{% endif %}">Закрытые</a>
+      <a href="?tab=all" class="{% if tab == 'all' %}is-on{% endif %}">Все заявки</a>
+      <a href="?tab=kp" class="{% if tab == 'kp' %}is-on{% endif %}">Мои КП</a>
+    </nav>
+    {% if tab == "kp" %}
+      <div class="cab-table-wrap"><table class="cab-table">
+        <thead><tr><th>КП</th><th>Дата</th><th>Кому</th><th>Менеджер</th><th>Статус</th><th class="num">Позиций</th></tr></thead>
+        <tbody>
+        {% for k in kps %}<tr onclick="location.href='/kp/{{ k.pk }}/'"><td><a href="/kp/{{ k.pk }}/">{{ k.code }}</a></td><td>{{ k.date|date:"d.m.Y" }}</td><td>{{ k.to|default:"—" }}</td><td>{{ k.manager.get_full_name|default:k.manager.username }}</td><td><span class="st st-{{ k.status }}">{{ k.get_status_display }}</span></td><td class="num">{{ k.items.count }}</td></tr>
+        {% empty %}<tr><td colspan="6" class="cab-empty">КП пока нет. Соберите корзину в каталоге и нажмите «Сделать КП из корзины» или откройте заявку.</td></tr>{% endfor %}
+        </tbody></table></div>
+    {% else %}
+      <div class="cab-table-wrap"><table class="cab-table">
+        <thead><tr><th>№</th><th>Когда</th><th>Клиент</th><th>Телефон</th><th>Что просит</th><th class="num">Сумма</th><th>Статус</th><th>Менеджер</th></tr></thead>
+        <tbody>
+        {% for l in leads %}<tr onclick="location.href='/kp/leads/{{ l.pk }}/'">
+          <td><a href="/kp/leads/{{ l.pk }}/">{{ l.pk }}</a></td><td>{{ l.created|date:"d.m H:i" }}</td>
+          <td>{{ l.name|default:"—" }}{% if l.company %}<small>{{ l.company }}</small>{% endif %}</td>
+          <td>{{ l.phone|default:l.email }}</td>
+          <td>{% if l.source == "manager" %}<span class="st">от менеджера</span>{% else %}<span class="st st-{{ l.kind }}">{{ l.get_kind_display }}</span>{% endif %}</td>
+          <td class="num">{{ l.total|money }}</td><td><span class="st st-{{ l.status }}">{{ l.get_status_display }}</span></td>
+          <td>{% if l.manager %}{{ l.manager.get_full_name|default:l.manager.username }}{% else %}<i>свободна</i>{% endif %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="8" class="cab-empty">Здесь пока пусто. Заявки появляются, когда клиент отправляет корзину с сайта.</td></tr>{% endfor %}
+        </tbody></table></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
