@@ -199,3 +199,26 @@ def product_page(request, slug):
         "role": role, "staff": staff_info(p, role),
     })
     return _private(resp) if role else resp
+
+
+def staff_login(request):
+    """«Вход для сотрудников»: после входа — в каталог (а не в админку). Уже вошедших сразу ведёт в каталог."""
+    from django.contrib.admin import site as admin_site
+    from django.contrib.admin.forms import AdminAuthenticationForm
+    from django.contrib.auth.views import LoginView
+    from django.shortcuts import redirect
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    nxt = request.GET.get("next") or request.POST.get("next") or "/catalog/"
+    if not url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        nxt = "/catalog/"
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect(nxt)
+    return LoginView.as_view(
+        template_name="admin/login.html",
+        authentication_form=AdminAuthenticationForm,
+        extra_context={**admin_site.each_context(request), "title": "Вход для сотрудников",
+                       "site_header": "Софтмонтаж — вход для сотрудников", "next": nxt, "app_path": request.get_full_path()},
+        redirect_authenticated_user=False,
+        next_page=nxt,
+    )(request)
