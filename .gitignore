@@ -198,3 +198,4 @@ VERSION
 app/db.sqlite3
 app/_static/
 app/_data/
+app/_media/

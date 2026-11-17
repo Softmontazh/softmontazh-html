@@ -91,6 +91,7 @@ apply_catalog() {
     sudo -u softmontazh "$CAT_HOME/venv/bin/pip" install -q -r "$SITE_DIR/app/requirements.txt" && echo "$h" > "$CAT_HOME/.req-hash"
   fi
   install -m 755 "$SITE_DIR/deploy/softmontazh-manage" /usr/local/bin/softmontazh-manage
+  install -d -o softmontazh -g softmontazh -m 755 "$CAT_HOME/media"
   if ! cmp -s "$SITE_DIR/deploy/softmontazh.service" /etc/systemd/system/softmontazh.service; then
     install -m 644 "$SITE_DIR/deploy/softmontazh.service" /etc/systemd/system/softmontazh.service && systemctl daemon-reload
   fi

@@ -31,6 +31,7 @@
   let here = (location.pathname.split("/").pop() || "index.html").toLowerCase();
   if (!here.includes(".")) here += ".html"; // адреса без .html: /services → services.html
   if (/^\/catalog(\/|$)/.test(location.pathname)) here = "catalog/"; // каталог и карточки товаров
+  if (/^\/kp(\/|$)/.test(location.pathname)) here = "-"; // конструктор КП — без подсветки пункта меню
   const navLinks = (cls) => NAV.map(([href, label]) =>
     `<a class="${cls}${href === here ? " is-active" : ""}" href="${B}${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
 

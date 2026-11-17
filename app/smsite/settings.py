@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "catalog",
+    "kp",
 ]
 
 MIDDLEWARE = [
@@ -78,6 +79,12 @@ STATIC_ROOT = env("SM_STATIC_ROOT", str(BASE_DIR / "_static"))
 
 # Временные файлы импорта
 SM_DATA_DIR = Path(env("SM_DATA_DIR", str(BASE_DIR / "_data")))
+
+# Загружаемые файлы (логотипы КП). На сервере — /opt/softmontazh/media, отдаёт nginx по /media/
+MEDIA_URL = "/media/"
+MEDIA_ROOT = env("SM_MEDIA_ROOT", str(SM_DATA_DIR.parent / ("media" if env("SM_DATA_DIR") else "_media")))
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = True

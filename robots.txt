@@ -1,4 +1,5 @@
 User-agent: *
 Disallow: /admin/
 Disallow: /api/
+Disallow: /kp/
 Sitemap: https://softmontazh.kz/sitemap.xml

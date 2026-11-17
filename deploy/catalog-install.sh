@@ -30,7 +30,7 @@ fi
 
 say "1/8 Пользователь и папки"
 id "$U" >/dev/null 2>&1 || useradd --system --home-dir "$HOME_DIR" --shell /usr/sbin/nologin "$U"
-install -d -o "$U" -g "$U" -m 755 "$HOME_DIR" "$HOME_DIR/static" "$HOME_DIR/data"
+install -d -o "$U" -g "$U" -m 755 "$HOME_DIR" "$HOME_DIR/static" "$HOME_DIR/data" "$HOME_DIR/media"
 install -d -o "$U" -g "$U" -m 750 "$HOME_DIR/backups"
 # код сайта должен читаться пользователем сервиса
 chmod o+rx /var/www "$SITE_DIR" 2>/dev/null || true

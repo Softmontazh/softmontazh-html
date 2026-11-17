@@ -1,0 +1,143 @@
+{% load catalog_tags %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Коммерческое предложение — {{ t.company }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  :root { --main: {{ c.main }}; --deep: {{ c.deep }}; --accent: {{ c.accent }}; --tint: {{ c.tint }}; --line: {{ c.line }}; --text: #1F2633; --muted: #646B8F; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #E9EBF2; }
+  body { font: 400 10.5pt/1.4 "Rubik", Arial, sans-serif; color: var(--text); }
+  .sheet { width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff; box-shadow: 0 4px 24px rgba(20,24,50,.12); }
+  @media print { html { background: #fff; } .sheet { box-shadow: none; margin: 0; } @page { size: A4; margin: 0; } }
+
+  /* --- шапка --- */
+  .logo { width: 22mm; height: 22mm; border-radius: 4mm; background: var(--tint); display: grid; place-items: center; overflow: hidden; flex: none; }
+  .logo img { max-width: 80%; max-height: 80%; object-fit: contain; }
+  .h-classic, .h-dark { display: flex; align-items: center; gap: 6mm; padding: 9mm 14mm; color: #fff; background: var(--main); }
+  .h-dark { background: #14172B; border-bottom: 1.2mm solid var(--accent); }
+  .h-classic .logo { background: #fff; }
+  .h-dark .logo { background: #232842; }
+  .h-classic .co, .h-dark .co { flex: 1; min-width: 0; }
+  .co-name { font-size: 15pt; font-weight: 600; line-height: 1.2; }
+  .co-slogan { font-size: 9.5pt; opacity: .85; margin-top: 1mm; }
+  .h-contacts { border-collapse: collapse; font-size: 8.8pt; }
+  .h-contacts td { padding: .5mm 0; }
+  .h-contacts td:first-child { opacity: .75; padding-right: 6mm; }
+  .h-contacts td:last-child { font-weight: 600; text-align: right; }
+  .h-dark .h-contacts td:first-child { color: var(--accent); opacity: 1; }
+
+  .h-light-bar { display: flex; justify-content: space-between; gap: 6mm; background: var(--main); color: #fff; padding: 3mm 14mm; font-size: 8.8pt; font-weight: 500; border-top: 1.4mm solid var(--accent); }
+  .h-light { display: flex; align-items: center; gap: 8mm; padding: 9mm 14mm 8mm; border-bottom: 1px solid var(--line); }
+  .h-light .co { flex: 1; border-left: 1.2mm solid var(--main); padding-left: 5mm; }
+  .h-light .co-name { color: var(--main); font-size: 18pt; }
+  .h-light .co-slogan { color: var(--main); opacity: 1; }
+  .h-light .co-mgr { font-size: 8.8pt; color: var(--muted); margin-top: 1.5mm; }
+  .h-light .co-mgr b { color: var(--text); font-weight: 500; }
+
+  /* --- тело --- */
+  .body { padding: 10mm 14mm 12mm; }
+  h1 { font-size: 17pt; font-weight: 700; color: var(--deep); letter-spacing: -.2pt; }
+  .meta { font-size: 9.5pt; color: var(--muted); margin-top: 1mm; }
+  .to { font-size: 11pt; margin-top: 1mm; }
+  table.items { width: 100%; border-collapse: collapse; margin-top: 7mm; font-size: 9pt; }
+  table.items thead th { background: var(--tint); color: var(--deep); font-weight: 600; font-size: 8.3pt; text-align: left; padding: 2.4mm 2mm; }
+  table.items thead { display: table-header-group; }
+  table.items tr { break-inside: avoid; page-break-inside: avoid; }
+  table.items td { padding: 2.6mm 2mm; border-bottom: 1px solid #E6E8F0; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; }
+  th.num { text-align: right; }
+  .sec td { padding-top: 5mm; font-size: 8.4pt; font-weight: 600; letter-spacing: .5pt; text-transform: uppercase; color: var(--deep); border-bottom: 1px solid var(--line); }
+  .ph { width: 17mm; }
+  .ph img { width: 15mm; height: 15mm; object-fit: contain; display: block; }
+  .ph .noimg { width: 15mm; height: 15mm; border-radius: 2mm; background: var(--tint); }
+  .nm b { font-weight: 600; }
+  .nm .tp { font-weight: 400; }
+  .nm small { display: block; color: var(--muted); font-size: 7.8pt; line-height: 1.35; margin-top: .8mm; }
+  td.sum { font-weight: 600; }
+
+  .totals { margin: 7mm 0 0 auto; width: 76mm; background: var(--tint); border: 1px solid var(--line); border-radius: 3mm; padding: 4mm 5mm; font-size: 9pt; break-inside: avoid; }
+  .totals .row { display: flex; justify-content: space-between; padding: .6mm 0; color: var(--muted); }
+  .totals .row b { color: var(--text); font-weight: 500; }
+  .totals .grand { border-top: 1px solid var(--line); margin-top: 2mm; padding-top: 2.5mm; }
+  .totals .grand span { font-size: 7.8pt; letter-spacing: .5pt; text-transform: uppercase; color: var(--muted); }
+  .totals .grand div { font-size: 17pt; font-weight: 700; color: var(--deep); }
+  .footer { margin-top: 9mm; padding-top: 4mm; border-top: 1px solid var(--line); font-size: 8.6pt; color: var(--muted); }
+  .footer p + p { margin-top: 1.2mm; }
+  .accent-dot { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="sheet">
+  {% if t.header == "light" %}
+    <div class="h-light-bar">{% for k in contacts %}<span>{{ k.value }}</span>{% endfor %}</div>
+    <div class="h-light">
+      <div class="co">
+        <div class="co-name">{{ t.company }}</div>
+        {% if t.slogan %}<div class="co-slogan">{{ t.slogan }}</div>{% endif %}
+        {% if kp.manager %}<div class="co-mgr">Менеджер: <b>{{ kp.manager }}</b></div>{% endif %}
+      </div>
+      <div class="logo"><img src="{{ logo }}" alt=""></div>
+    </div>
+  {% else %}
+    <div class="h-{{ t.header }}">
+      <div class="logo"><img src="{{ logo }}" alt=""></div>
+      <div class="co">
+        <div class="co-name">{{ t.company }}</div>
+        {% if t.slogan %}<div class="co-slogan">{{ t.slogan }}</div>{% endif %}
+      </div>
+      <table class="h-contacts">
+        {% if kp.manager %}<tr><td>Менеджер</td><td>{{ kp.manager }}</td></tr>{% endif %}
+        {% for k in contacts %}<tr><td>{{ k.label }}</td><td>{{ k.value }}</td></tr>{% endfor %}
+      </table>
+    </div>
+  {% endif %}
+
+  <div class="body">
+    <h1>Коммерческое предложение</h1>
+    <div class="meta">{% if kp.number %}№ {{ kp.number }} · {% endif %}от {{ kp.date|date:"d.m.Y" }}</div>
+    {% if kp.to %}<div class="to">Кому: {{ kp.to }}</div>{% endif %}
+
+    <table class="items">
+      <thead><tr>
+        <th style="width:7mm">№</th>
+        {% if full %}<th class="ph">Фото</th>{% endif %}
+        <th>Наименование</th>
+        <th class="num" style="width:17mm">Кол-во</th>
+        {% if not t.hide_prices %}<th class="num" style="width:22mm">Цена</th><th class="num" style="width:24mm">Сумма</th>{% endif %}
+      </tr></thead>
+      <tbody>
+      {% for s in kp.sections %}{% if s.items %}
+        <tr class="sec"><td colspan="{{ cols }}">{{ s.title }}</td></tr>
+        {% for it in s.items %}
+        <tr>
+          <td>{{ it.n }}</td>
+          {% if full %}<td class="ph">{% if it.img %}<img src="{{ it.img }}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='&lt;div class=&quot;noimg&quot;&gt;&lt;/div&gt;'">{% else %}<div class="noimg"></div>{% endif %}</td>{% endif %}
+          <td class="nm"><b>{{ it.name }}</b>{% if it.type %} <span class="tp">{{ it.type }}</span>{% endif %}{% if full and it.desc %}<small>{{ it.desc }}</small>{% endif %}</td>
+          <td class="num">{{ it.qty }} {{ it.unit }}</td>
+          {% if not t.hide_prices %}<td class="num">{{ it.price|money }}</td><td class="num sum">{{ it.sum|money }}</td>{% endif %}
+        </tr>
+        {% endfor %}
+      {% endif %}{% endfor %}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      {% if kp.discount %}
+        <div class="row">Итого <b>{{ kp.total|money }}</b></div>
+        <div class="row">Скидка {{ kp.discount_pct }}% <b>−{{ kp.discount|money }}</b></div>
+        <div class="grand"><span>Итого со скидкой</span><div>{{ kp.grand|money }}</div></div>
+      {% else %}
+        <div class="grand" style="border:0;margin:0;padding:0"><span>Итого</span><div>{{ kp.grand|money }}</div></div>
+      {% endif %}
+    </div>
+
+    {% if footer %}<div class="footer">{% for line in footer %}<p>{{ line }}</p>{% endfor %}</div>{% endif %}
+  </div>
+</div>
+</body>
+</html>

@@ -10,6 +10,7 @@ admin.site.index_title = "Управление каталогом"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("kp/", include("kp.urls")),
     path("", include("catalog.urls")),
 ]
 
@@ -20,4 +21,5 @@ if settings.DEBUG:
     from django.urls import re_path
     from django.views.static import serve
 
-    urlpatterns += [re_path(r"^(?P<path>(assets|brand)/.*)$", serve, {"document_root": settings.SITE_ROOT})]
+    urlpatterns += [re_path(r"^(?P<path>(assets|brand)/.*)$", serve, {"document_root": settings.SITE_ROOT}),
+                    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT})]

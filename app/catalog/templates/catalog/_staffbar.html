@@ -3,6 +3,7 @@
   <div class="container staffbar__in">
     <span>Вы вошли: <b>{{ request.user.get_full_name|default:request.user.username }}</b> · {% if role == "owner" %}владелец — видите закупку, пол и маржу{% else %}менеджер — видите пол и сколько можно уступить{% endif %}. Покупатели этого не видят.</span>
     <span class="staffbar__links">
+      <a href="/kp/">КП</a>
       <a href="/admin/">Админка</a>
       <form method="post" action="/admin/logout/">{% csrf_token %}<button type="submit">Выйти</button></form>
     </span>

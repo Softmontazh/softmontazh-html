@@ -1,0 +1,101 @@
+{% extends "catalog/base.html" %}
+{% block title %}Шаблон КП — {{ t.name }} | Софтмонтаж{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow"><link rel="stylesheet" href="/assets/css/kp.css?v=1">{% endblock %}
+{% block main %}
+<section class="kp-wrap">
+  <div class="kp-top container-wide">
+    <div>
+      <h1 class="kp-h1">Коммерческое предложение — шаблон</h1>
+      <p class="kp-sub">Слева — лист, который получит клиент (пример с позициями из каталога). Справа — настройки шаблона.</p>
+    </div>
+  </div>
+  <div class="kp-grid container-wide">
+    <div class="kp-preview" id="pv">
+      <div class="kp-scale" id="pvScale"><iframe id="sheet" title="Предпросмотр КП" srcdoc="{{ sheet|force_escape }}"></iframe></div>
+    </div>
+
+    <aside class="kp-panel" id="panel">
+      <div class="kp-card">
+        <div class="kp-label">Что видит клиент</div>
+        <div class="kp-seg" data-group="view_mode">
+          <button type="button" data-v="brief">Краткое</button><button type="button" data-v="full">Подробное</button>
+        </div>
+        <p class="kp-hint" id="vmHint"></p>
+        <label class="kp-check"><input type="checkbox" id="hide_prices"> Не показывать цены по позициям (только ИТОГО)</label>
+      </div>
+
+      <div class="kp-card">
+        <div class="kp-label">Выбор шаблона</div>
+        <select id="tplSelect" class="kp-input">
+          {% for x in templates %}<option value="{{ x.pk }}"{% if x.pk == t.pk %} selected{% endif %}>{{ x.name }}{% if x.is_default %} — по умолчанию{% endif %}{% if x.owner_id %} (мой){% endif %}</option>{% endfor %}
+        </select>
+        <button type="button" class="kp-link" id="copyBtn">+ Сделать копию шаблона</button>
+      </div>
+
+      <div class="kp-card">
+        <div class="kp-label">Название шаблона</div>
+        <input id="name" class="kp-input" maxlength="120">
+        <label class="kp-check" id="defaultRow"><input type="checkbox" id="is_default"> Шаблон по умолчанию</label>
+        <p class="kp-hint" id="roNote" hidden>Это шаблон фирмы — менять его может только владелец. Сделайте копию, чтобы настроить свой.</p>
+      </div>
+
+      <div class="kp-card">
+        <div class="kp-label">Шапка</div>
+        <div class="kp-logo">
+          <div class="kp-logo__img"><img id="logoImg" alt=""></div>
+          <div>
+            <p class="kp-hint">PNG, JPG или WebP до 1 МБ. Лучше квадратный знак или горизонтальный логотип на прозрачном фоне.</p>
+            <label class="kp-btn kp-btn--sm">Загрузить логотип<input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" hidden></label>
+            <button type="button" class="kp-btn kp-btn--sm kp-btn--danger" id="logoDel">Убрать</button>
+          </div>
+        </div>
+        <div class="kp-label">Компания</div><input id="company" class="kp-input" maxlength="160">
+        <div class="kp-label">Слоган / описание</div><textarea id="slogan" class="kp-input" rows="2" maxlength="240"></textarea>
+        <p class="kp-hint">Менеджер в шапке подставляется сам — тот, кто делает КП.</p>
+      </div>
+
+      <div class="kp-card">
+        <div class="kp-row"><div class="kp-label">Контакты</div><button type="button" class="kp-link" id="addContact">+ Добавить строку</button></div>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="kp-card">
+        <div class="kp-label">Вариант шапки</div>
+        <div class="kp-seg" data-group="header">
+          <button type="button" data-v="classic">Классическая</button><button type="button" data-v="dark">Тёмная</button><button type="button" data-v="light">Светлая</button>
+        </div>
+        <div class="kp-label">Оформление</div>
+        <div class="kp-seg kp-seg--colors" data-group="theme">
+          {% for key, th in themes.items %}<button type="button" data-v="{{ key }}"><i style="background:{{ th.main }}"></i><i style="background:{{ th.accent }}"></i>{{ th.label }}</button>{% endfor %}
+          <button type="button" data-v="custom"><input type="color" id="custom_color" title="Свой цвет"> Свой</button>
+        </div>
+      </div>
+
+      <div class="kp-card">
+        <div class="kp-row"><div class="kp-label">Подвал</div><button type="button" class="kp-link" id="addFooter">+ Добавить строку</button></div>
+        <div id="footer"></div>
+        <p class="kp-hint">Условия, срок действия, НДС, реквизиты — по строке.</p>
+      </div>
+
+      <div class="kp-card">
+        <button type="button" class="kp-btn kp-btn--danger kp-btn--wide" id="delBtn">Удалить шаблон</button>
+      </div>
+
+      <div class="kp-actions">
+        <p class="kp-hint" id="saveState">Нет изменений для сохранения</p>
+        <div class="kp-row">
+          <button type="button" class="kp-btn" id="cancelBtn" disabled>Отмена</button>
+          <button type="button" class="kp-btn kp-btn--primary" id="saveBtn" disabled>Сохранить изменения</button>
+        </div>
+        <button type="button" class="kp-btn kp-btn--dark kp-btn--wide" disabled title="Появится с готовыми КП">Скачать PDF</button>
+        <button type="button" class="kp-btn kp-btn--wide" disabled title="Появится с готовыми КП">Скопировать ссылку</button>
+        <p class="kp-hint">PDF и ссылка для клиента появятся, когда КП будет собираться из каталога (следующий этап).</p>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>window.KP_TEMPLATE = {{ data_json|safe }};</script>
+<script src="/assets/js/kp.js?v=1"></script>
+{% endblock %}
