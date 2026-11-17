@@ -99,6 +99,12 @@ apply_catalog() {
   softmontazh-manage migrate --noinput
   softmontazh-manage collectstatic --noinput -v0
   systemctl restart softmontazh
+  if [[ -f /etc/systemd/system/softmontazh-bot.service ]]; then
+    if ! cmp -s "$SITE_DIR/deploy/softmontazh-bot.service" /etc/systemd/system/softmontazh-bot.service; then
+      install -m 644 "$SITE_DIR/deploy/softmontazh-bot.service" /etc/systemd/system/softmontazh-bot.service && systemctl daemon-reload
+    fi
+    systemctl restart softmontazh-bot && echo "Бот @sm_salebot: перезапущен (webhook ставится заново)."
+  fi
   sleep 3
   if curl -fsS -o /dev/null http://127.0.0.1:8002/api/catalog/menu; then
     CATALOG_OK=1

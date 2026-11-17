@@ -1,0 +1,19 @@
+# Софтмонтаж — Telegram-бот @sm_salebot (webhook 127.0.0.1:8003 за nginx). Ставится deploy/bot-install.sh
+[Unit]
+Description=softmontazh.kz Telegram bot @sm_salebot
+After=network.target postgresql.service softmontazh.service
+
+[Service]
+User=softmontazh
+Group=softmontazh
+WorkingDirectory=/var/www/softmontazh.kz/app
+EnvironmentFile=/opt/softmontazh/.env
+ExecStart=/opt/softmontazh/venv/bin/python manage.py runbot
+Restart=always
+RestartSec=5
+MemoryMax=150M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

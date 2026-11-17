@@ -8,6 +8,20 @@
       <h1 class="cart-h1">Кабинет менеджера</h1>
       <div class="cab-actions"><a class="btn btn--outline btn--sm" href="/catalog/">Каталог</a><a class="btn btn--primary btn--sm" href="/catalog/cart/">Корзина → новое КП</a></div>
     </div>
+    <div class="tg-box">
+      <span class="tg-ico">✈</span>
+      {% if tg %}
+        <span>Telegram подключён: <b>{% if tg.username %}@{{ tg.username }}{% else %}{{ tg.name|default:tg.telegram_id }}{% endif %}</b> — кнопки под заявками в группе работают от вашего имени.</span>
+        <button type="button" class="kp-link" id="tgOff">Отключить</button>
+      {% else %}
+        <span>Подключите Telegram, чтобы брать заявки кнопкой в группе менеджеров (бот @{{ tg_bot }}).</span>
+        <button type="button" class="btn btn--primary btn--sm" id="tgOn">Подключить Telegram</button>
+      {% endif %}
+      {% if request.user.is_superuser %}
+        <span class="tg-group">Группы: {% for g in tg_groups %}<b>{{ g }}</b>{% if not forloop.last %}, {% endif %}{% empty %}<i>не подключены</i>{% endfor %}
+          · <button type="button" class="kp-link" id="tgGroup">Код для группы</button> <code id="tgCode" hidden></code></span>
+      {% endif %}
+    </div>
     <nav class="cab-tabs">
       <a href="?tab=new" class="{% if tab == 'new' %}is-on{% endif %}">Новые заявки{% if counts.new %} <b>{{ counts.new }}</b>{% endif %}</a>
       <a href="?tab=work" class="{% if tab == 'work' %}is-on{% endif %}">В работе{% if counts.work %} <b>{{ counts.work }}</b>{% endif %}</a>
@@ -39,4 +53,18 @@
     {% endif %}
   </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "";
+  const post = (u) => fetch(u, { method: "POST", credentials: "same-origin", headers: { "X-CSRFToken": csrf } }).then((r) => r.json());
+  document.getElementById("tgOn")?.addEventListener("click", async () => { const d = await post("/kp/api/tg/link"); if (d.url) { window.open(d.url, "_blank"); setTimeout(() => location.reload(), 15000); } });
+  document.getElementById("tgOff")?.addEventListener("click", async () => { if (confirm("Отключить Telegram от сайта?")) { await post("/kp/api/tg/unlink"); location.reload(); } });
+  document.getElementById("tgGroup")?.addEventListener("click", async () => {
+    const d = await post("/kp/api/tg/group-code"); const c = document.getElementById("tgCode");
+    c.hidden = false; c.textContent = `/bind ${d.code}`; c.title = "Отправьте эту команду в группе менеджеров в течение 10 минут";
+  });
+})();
+</script>
 {% endblock %}

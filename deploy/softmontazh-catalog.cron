@@ -8,3 +8,5 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 5 0 * * 1 softmontazh tail -n 2000 /opt/softmontazh/import.log > /opt/softmontazh/import.log.tmp 2>/dev/null && mv /opt/softmontazh/import.log.tmp /opt/softmontazh/import.log
 # ночной бэкап базы каталога, храним 7 штук
 40 22 * * * softmontazh pg_dump -Fc softmontazh > /opt/softmontazh/backups/catalog-$(date +\%F).dump && ls -1t /opt/softmontazh/backups/catalog-*.dump | tail -n +8 | xargs -r rm -f
+# Telegram-бот: раз в сутки сводка ошибок владельцу (если были) и чистка старых записей
+15 3 * * * softmontazh /usr/local/bin/softmontazh-manage tg_digest > /dev/null 2>&1

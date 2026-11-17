@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "catalog",
     "kp",
+    "tgbot",
 ]
 
 MIDDLEWARE = [
@@ -96,5 +97,6 @@ LOGGING = {
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": "WARNING"},
-    "loggers": {"catalog": {"handlers": ["console"], "level": "INFO", "propagate": False}},
+    "loggers": {"catalog": {"handlers": ["console"], "level": "INFO", "propagate": False},
+                "tgbot": {"handlers": ["console"], "level": "INFO", "propagate": False}},
 }

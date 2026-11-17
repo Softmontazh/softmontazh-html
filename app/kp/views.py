@@ -121,7 +121,12 @@ def cabinet(request):
     elif tab == "done":
         leads = leads.filter(status__in=["won", "lost"])
     kps = kps_for(request.user)[:50] if tab == "kp" else []
+    from tgbot import config as tgc
+    from tgbot.models import TgChat, TgUser
+    tg = TgUser.objects.filter(user=request.user, active=True).first()
     return render(request, "kp/cabinet.html", {
+        "tg_on": tgc.enabled() or bool(tgc.BOT_USERNAME), "tg_bot": tgc.BOT_USERNAME, "tg": tg,
+        "tg_groups": TgChat.objects.filter(active=True) if request.user.is_superuser else [],
         "tab": tab, "leads": leads[:200] if tab != "kp" else [], "kps": kps, "counts": counts,
         "role": staff_role(request), "statuses": LEAD_STATUS,
     })
@@ -369,3 +374,31 @@ def kp_public(request, token):
     resp["X-Robots-Tag"] = "noindex, nofollow"
     resp["Cache-Control"] = "private, no-store"
     return resp
+
+
+# ===================== Telegram =====================
+
+@staff_only
+@require_POST
+def api_tg_link(request):
+    from tgbot import config as tgc
+    from tgbot.services.binding import new_token
+    tok = new_token(request.user, "user")
+    return JsonResponse({"url": f"https://t.me/{tgc.BOT_USERNAME}?start={tok}"})
+
+
+@staff_only
+@require_POST
+def api_tg_unlink(request):
+    from tgbot.models import TgUser
+    TgUser.objects.filter(user=request.user).update(active=False)
+    return JsonResponse({"ok": True})
+
+
+@staff_only
+@require_POST
+def api_tg_group_code(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Только владелец"}, status=403)
+    from tgbot.services.binding import new_token
+    return JsonResponse({"code": new_token(request.user, "group")})
