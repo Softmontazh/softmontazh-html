@@ -24,9 +24,9 @@ class SiteSettings(models.Model):
     """Общие настройки каталога. Одна запись."""
     markup_percent = models.DecimalField("Наценка к рознице Barlau, %", max_digits=6, decimal_places=2, default=Decimal("0"),
         help_text="Для всех товаров. Можно задать отдельно для бренда или раздела. Отрицательное число — скидка.")
-    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, default=Decimal("10"),
+    min_markup_percent = models.DecimalField("Пол: наценка, %", max_digits=6, decimal_places=2, default=Decimal("10"),
         help_text="Общее правило; у бренда, раздела или подраздела можно задать своё.")
-    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, default=Decimal("10"),
+    manager_commission_percent = models.DecimalField("Менеджеру, % прибыли", max_digits=5, decimal_places=2, default=Decimal("10"),
         help_text="Общее правило; у бренда, раздела или подраздела можно задать своё.")
     round_to = models.PositiveIntegerField("Округлять цену до, ₸", default=1, choices=[(1, "1 ₸"), (10, "10 ₸"), (100, "100 ₸")])
     show_without_price = models.BooleanField("Показывать товары без цены («Цена по запросу»)", default=True)
@@ -95,11 +95,11 @@ class Brand(models.Model):
     sort = models.PositiveIntegerField("Порядок", default=100)
     markup_percent = models.DecimalField("Наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
         help_text="Пусто — как в общих настройках.")
-    purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
-        help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
-    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, null=True, blank=True,
-        help_text="Ниже «закупка + эта наценка» менеджер продать не может. Пусто — как у уровня выше.")
-    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
+    purchase_discount = models.DecimalField("Закупка: скидка, %", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Моя закупка: скидка от розницы Barlau, которую вы видите в B2B. Пусто — как у уровня выше. Покупатели не видят.")
+    min_markup_percent = models.DecimalField("Пол: наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Пол для менеджера: минимальная наценка на закупку — ниже «закупка + наценка» продать нельзя. Пусто — как у уровня выше.")
+    manager_commission_percent = models.DecimalField("Менеджеру, % прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
         help_text="Доля менеджера от прибыли сделки (цена продажи − закупка). Пусто — как у уровня выше.")
 
     class Meta:
@@ -118,11 +118,11 @@ class Category(models.Model):
     sort = models.PositiveIntegerField("Порядок", default=100)
     markup_percent = models.DecimalField("Наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
         help_text="Пусто — как у бренда.")
-    purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
-        help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
-    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, null=True, blank=True,
-        help_text="Ниже «закупка + эта наценка» менеджер продать не может. Пусто — как у уровня выше.")
-    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
+    purchase_discount = models.DecimalField("Закупка: скидка, %", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Моя закупка: скидка от розницы Barlau, которую вы видите в B2B. Пусто — как у уровня выше. Покупатели не видят.")
+    min_markup_percent = models.DecimalField("Пол: наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Пол для менеджера: минимальная наценка на закупку — ниже «закупка + наценка» продать нельзя. Пусто — как у уровня выше.")
+    manager_commission_percent = models.DecimalField("Менеджеру, % прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
         help_text="Доля менеджера от прибыли сделки (цена продажи − закупка). Пусто — как у уровня выше.")
 
     class Meta:
@@ -142,11 +142,11 @@ class Node(models.Model):
     path = models.CharField("Путь", max_length=200, db_index=True, editable=False, help_text="/id/id/id/ — для выборки ветки")
     depth = models.PositiveSmallIntegerField("Уровень", default=0, editable=False)
     sort = models.PositiveIntegerField("Порядок", default=0)
-    purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
-        help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
-    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, null=True, blank=True,
-        help_text="Ниже «закупка + эта наценка» менеджер продать не может. Пусто — как у уровня выше.")
-    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
+    purchase_discount = models.DecimalField("Закупка: скидка, %", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Моя закупка: скидка от розницы Barlau, которую вы видите в B2B. Пусто — как у уровня выше. Покупатели не видят.")
+    min_markup_percent = models.DecimalField("Пол: наценка, %", max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Пол для менеджера: минимальная наценка на закупку — ниже «закупка + наценка» продать нельзя. Пусто — как у уровня выше.")
+    manager_commission_percent = models.DecimalField("Менеджеру, % прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
         help_text="Доля менеджера от прибыли сделки (цена продажи − закупка). Пусто — как у уровня выше.")
 
     class Meta:

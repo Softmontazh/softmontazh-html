@@ -1,4 +1,8 @@
+from decimal import Decimal, InvalidOperation
+
+from django import forms
 from django.contrib import admin, messages
+from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils.html import format_html
@@ -6,6 +10,66 @@ from django.utils.html import format_html
 from django.db.models import Count
 
 from .models import Brand, Category, ImportRun, Node, Product, SiteSettings, recalc_prices
+
+
+class AdminCSS:
+    class Media:
+        css = {"all": ["catalog/admin.css"]}
+
+
+BULK_FIELDS = [
+    ("purchase_discount", "Закупка: скидка от розницы, %"),
+    ("min_markup_percent", "Пол для менеджера: наценка на закупку, %"),
+    ("manager_commission_percent", "Менеджеру, % от прибыли"),
+    ("markup_percent", "Наценка к рознице на сайте, %"),
+]
+
+
+class BulkSetForm(forms.Form):
+    field = forms.ChoiceField(label="Что заполнить", choices=[])
+    value = forms.DecimalField(label="Значение, %", required=False, max_digits=6, decimal_places=2)
+    clear = forms.BooleanField(label="Очистить (будет как у уровня выше)", required=False)
+
+    def __init__(self, *a, fields=(), **kw):
+        super().__init__(*a, **kw)
+        self.fields["field"].choices = fields
+
+    def clean(self):
+        d = super().clean()
+        if not d.get("clear") and d.get("value") is None:
+            raise forms.ValidationError("Укажите значение или отметьте «Очистить».")
+        return d
+
+
+class BulkSetMixin(AdminCSS):
+    """Действие «Заполнить выбранные»: одно значение в нужный столбец для всех отмеченных строк."""
+    bulk_fields = BULK_FIELDS
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if request.user.is_superuser:
+            actions["bulk_set"] = (BulkSetMixin.bulk_set, "bulk_set", "Заполнить выбранные одним значением…")
+        return actions
+
+    def bulk_set(self, request, queryset):
+        fields = [(f, l) for f, l in self.bulk_fields if hasattr(queryset.model, f)]
+        if "apply" in request.POST:
+            form = BulkSetForm(request.POST, fields=fields)
+            if form.is_valid():
+                f = form.cleaned_data["field"]
+                val = None if form.cleaned_data["clear"] else form.cleaned_data["value"]
+                n = queryset.update(**{f: val})
+                recalc_prices()
+                label = dict(fields)[f]
+                self.message_user(request, f"«{label}»: {'очищено' if val is None else f'{val.normalize():f}%'} у {n} строк. Цены пересчитаны.")
+                return None
+        else:
+            form = BulkSetForm(fields=fields)
+        return TemplateResponse(request, "admin/catalog/bulk_set.html", {
+            **self.admin_site.each_context(request), "title": "Заполнить выбранные", "form": form,
+            "queryset": queryset, "count": queryset.count(), "opts": self.model._meta,
+            "action_checkbox_name": admin.helpers.ACTION_CHECKBOX_NAME,
+        })
 
 
 @admin.register(SiteSettings)
@@ -52,9 +116,9 @@ class CategoryInline(admin.TabularInline):
 
 
 @admin.register(Brand)
-class BrandAdmin(admin.ModelAdmin):
-    list_display = ["name", "enabled", "sort", "markup_percent", "purchase_discount", "min_markup_percent", "manager_commission_percent", "n_products"]
-    list_editable = ["enabled", "sort", "markup_percent", "purchase_discount", "min_markup_percent", "manager_commission_percent"]
+class BrandAdmin(BulkSetMixin, admin.ModelAdmin):
+    list_display = ["name", "enabled", "purchase_discount", "min_markup_percent", "manager_commission_percent", "markup_percent", "n_products"]
+    list_editable = ["enabled", "purchase_discount", "min_markup_percent", "manager_commission_percent", "markup_percent"]
     fields = ["name", "slug", "enabled", "sort", "markup_percent", "purchase_discount", "min_markup_percent", "manager_commission_percent"]
     readonly_fields = ["slug"]
     inlines = [CategoryInline]
@@ -80,11 +144,12 @@ class BrandAdmin(admin.ModelAdmin):
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "brand", "enabled", "sort", "markup_percent", "purchase_discount", "min_markup_percent", "manager_commission_percent"]
-    list_editable = ["enabled", "sort", "markup_percent", "purchase_discount", "min_markup_percent", "manager_commission_percent"]
-    list_filter = ["brand", "enabled"]
-    search_fields = ["name"]
+class CategoryAdmin(BulkSetMixin, admin.ModelAdmin):
+    list_display = ["name", "brand", "enabled", "purchase_discount", "min_markup_percent", "manager_commission_percent", "markup_percent"]
+    list_editable = ["enabled", "purchase_discount", "min_markup_percent", "manager_commission_percent", "markup_percent"]
+    list_per_page = 200
+    search_fields = ["name", "brand__name"]
+    search_help_text = "Поиск по разделу или бренду, например «Hikvision» или «Домофоны»."
     fields = ["brand", "name", "slug", "enabled", "sort", "markup_percent", "purchase_discount", "min_markup_percent", "manager_commission_percent"]
     readonly_fields = ["brand", "name", "slug"]
 
@@ -203,13 +268,13 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 @admin.register(Node)
-class NodeAdmin(admin.ModelAdmin):
+class NodeAdmin(BulkSetMixin, admin.ModelAdmin):
     """Дерево разделов Barlau — здесь задаётся скидка закупки по разделам и подразделам."""
     list_display = ["tree_name", "purchase_discount", "min_markup_percent", "manager_commission_percent", "effective", "n_products"]
     list_editable = ["purchase_discount", "min_markup_percent", "manager_commission_percent"]
     list_display_links = None
-    search_fields = ["name"]
-    list_filter = ["depth"]
+    search_fields = ["name", "path"]
+    search_help_text = "Поиск по названию раздела. Отметьте нужные строки и выберите действие «Заполнить выбранные…»."
     list_per_page = 200
     ordering = ["path"]
     fields = ["name", "purchase_discount", "min_markup_percent", "manager_commission_percent"]
@@ -256,7 +321,7 @@ class NodeAdmin(admin.ModelAdmin):
         e = getattr(self, "_eff", {}).get(obj.pk, {})
         def part(f, label, fmt):
             if f not in e:
-                return f"{label}: как у бренда"
+                return f"{label}: —"
             v, src = e[f]
             return f"{label}: {fmt(v)}" + (f" (от «{src}»)" if src else "")
         num = lambda v: f"{v.normalize():f}"

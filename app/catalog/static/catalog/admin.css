@@ -1,0 +1,12 @@
+/* Админка каталога: компактные таблицы; шапка таблицы и горизонтальная прокрутка всегда на экране */
+#changelist .results { max-height: calc(100vh - 250px); overflow: auto; border: 1px solid var(--hairline-color); }
+#changelist #result_list { margin: 0; }
+#changelist #result_list thead th { position: sticky; top: 0; z-index: 3; background: var(--darkened-bg); box-shadow: 0 1px 0 var(--hairline-color); }
+#changelist #result_list thead th, #changelist #result_list thead th .text a { font-size: 11px; white-space: normal; line-height: 1.25; }
+#changelist #result_list thead th .text { max-width: 96px; }
+#changelist #result_list td { white-space: nowrap; vertical-align: middle; }
+#changelist #result_list td.field-tree_name, #changelist #result_list th.field-name, #changelist #result_list td.field-effective { white-space: normal; min-width: 150px; }
+#changelist #result_list input[type="number"], #changelist #result_list input[type="text"] { width: 58px; padding: 4px 6px; }
+#changelist #result_list { border-collapse: separate; border-spacing: 0; }
+#changelist #result_list td.field-effective { font-size: 11px; line-height: 1.35; color: var(--body-quiet-color); }
+#changelist #result_list td input.vDecimalField, #changelist #result_list td input[type="number"] { width: 58px !important; }

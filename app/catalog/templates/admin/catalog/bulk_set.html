@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>Выбрано строк: <b>{{ count }}</b>. Одно значение запишется в выбранный столбец у всех; после сохранения цены пересчитаются.</p>
+<form method="post">{% csrf_token %}
+  {% for obj in queryset %}<input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">{% endfor %}
+  <input type="hidden" name="action" value="bulk_set">
+  <input type="hidden" name="apply" value="1">
+  {{ form.non_field_errors }}
+  <table>
+    {% for f in form %}<tr><th style="text-align:left;padding:8px 16px 8px 0">{{ f.label_tag }}</th><td style="padding:8px 0">{{ f }} {{ f.errors }}</td></tr>{% endfor %}
+  </table>
+  <p style="margin-top:16px">
+    <input type="submit" class="default" value="Заполнить">
+    <a href="" onclick="history.back();return false" class="button cancel-link" style="margin-left:10px">Отмена</a>
+  </p>
+  <details style="margin-top:16px"><summary>Какие строки выбраны</summary>
+    <ul>{% for obj in queryset|slice:":200" %}<li>{{ obj }}</li>{% endfor %}{% if count > 200 %}<li>… и ещё {{ count|add:"-200" }}</li>{% endif %}</ul>
+  </details>
+</form>
+{% endblock %}
