@@ -8,12 +8,13 @@ from .models import Brand, Category, ImportRun, Product, SiteSettings, recalc_pr
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
+    readonly_fields = ["last_check"]
     fieldsets = [
         ("Менеджер", {"fields": ["manager_name", "show_phone", "manager_phone", "manager_whatsapp"],
                       "description": "Контакты для покупателей: подставляются в кнопки звонка и WhatsApp на всём сайте (обновление — в течение минуты)."}),
         ("Цены", {"fields": ["markup_percent", "round_to", "price_note"]}),
         ("Что показывать", {"fields": ["show_without_price", "show_out_of_stock"]}),
-        ("Выгрузки Barlau", {"fields": ["excel_url", "yml_url"]}),
+        ("Выгрузки Barlau", {"fields": ["import_interval", "last_check", "excel_url", "yml_url"]}),
     ]
 
     def has_add_permission(self, request):
@@ -151,7 +152,8 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(ImportRun)
 class ImportRunAdmin(admin.ModelAdmin):
-    list_display = ["started", "status", "source", "total", "created_count", "updated_count", "deactivated_count", "described_count"]
+    list_display = ["started", "status", "source", "total", "created_count", "updated_count", "price_up", "price_down",
+                    "out_of_stock", "back_in_stock", "deactivated_count"]
     readonly_fields = [f.name for f in ImportRun._meta.fields]
     change_list_template = "admin/catalog/importrun_changelist.html"
 
@@ -164,7 +166,7 @@ class ImportRunAdmin(admin.ModelAdmin):
     def request_import(self, request):
         if request.method == "POST":
             SiteSettings.objects.filter(pk=SiteSettings.get().pk).update(import_requested=True)
-            messages.success(request, "Обновление запрошено — начнётся в течение 10 минут. Обновите эту страницу позже.")
+            messages.success(request, "Обновление запрошено — начнётся в течение 10 минут (загрузка будет полной, даже если выгрузка не менялась). Обновите эту страницу позже.")
         return redirect(reverse("admin:catalog_importrun_changelist"))
 
     def changelist_view(self, request, extra_context=None):

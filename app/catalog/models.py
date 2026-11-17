@@ -39,6 +39,13 @@ class SiteSettings(models.Model):
         help_text="Ставится во все кнопки «Позвонить» и телефон в шапке/подвале сайта.")
     manager_whatsapp = models.CharField("Менеджер — WhatsApp", max_length=30, default="+7 777 900 0305",
         help_text="Номер для кнопок «Написать в WhatsApp» и «Заказать в WhatsApp».")
+    import_interval = models.PositiveIntegerField("Как часто проверять выгрузку Barlau", default=60, choices=[
+        (30, "каждые 30 минут"), (60, "каждый час"), (120, "каждые 2 часа"), (180, "каждые 3 часа"),
+        (360, "каждые 6 часов"), (720, "2 раза в сутки"), (1440, "раз в сутки")],
+        help_text="Barlau обновляет выгрузку раз в 30 минут. Если файл не изменился — база не трогается.")
+    last_check = models.DateTimeField("Последняя проверка выгрузки", null=True, blank=True, editable=False)
+    excel_hash = models.CharField(max_length=64, blank=True, editable=False)
+    yml_hash = models.CharField(max_length=64, blank=True, editable=False)
     import_requested = models.BooleanField("Запрошено обновление вручную", default=False, editable=False)
 
     class Meta:
@@ -241,6 +248,10 @@ class ImportRun(models.Model):
     updated_count = models.PositiveIntegerField("Обновлено", default=0)
     deactivated_count = models.PositiveIntegerField("Пропало из выгрузки", default=0)
     described_count = models.PositiveIntegerField("Описаний из YML", default=0)
+    price_up = models.PositiveIntegerField("Подорожало", default=0)
+    price_down = models.PositiveIntegerField("Подешевело", default=0)
+    out_of_stock = models.PositiveIntegerField("Закончилось", default=0)
+    back_in_stock = models.PositiveIntegerField("Снова в наличии", default=0)
     log = models.TextField("Журнал", blank=True)
 
     class Meta:

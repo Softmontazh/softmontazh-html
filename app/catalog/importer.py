@@ -4,6 +4,7 @@ Excel (excelExportApi.xlsx) — основной источник: модель,
 YML (export_p2P.xml) — дополнение: полное описание и подраздел по дереву категорий.
 Файлы читаются потоково и после разбора удаляются (память сервера ограничена).
 """
+import hashlib
 import logging
 import re
 import shutil
@@ -131,43 +132,64 @@ class Importer:
                   box=col("количество шт в коробке"), war=col("срок гарантии"), type=col("тип устройства"),
                   gtin=col("код gtin (ean)"), price=col("цена"), stock=col("остатки"))
 
-        active_before = Product.objects.filter(is_active=True).count()
-        existing = dict(Product.objects.values_list("barlau_id", "pk"))
-        used_slugs = set(Product.objects.values_list("slug", flat=True))
-        now = timezone.now()
-        seen, new_batch, upd_batch = 0, [], []
-        created = updated = 0
-
-        def flush():
-            nonlocal new_batch, upd_batch, created, updated
-            with transaction.atomic():
-                if new_batch:
-                    Product.objects.bulk_create(new_batch); created += len(new_batch)
-                if upd_batch:
-                    Product.objects.bulk_update(upd_batch, UPDATE_FIELDS); updated += len(upd_batch)
-            new_batch, upd_batch = [], []
-
-        seen_ids = set()
+        # 1) читаем выгрузку целиком в компактный вид и проверяем, что она полная — до любых записей в базу
+        incoming = {}
         for r in rows:
             bid = _num(r[ci["id"]])
             model = _str(r[ci["model"]], 200)
-            if not bid or not model or bid in seen_ids:
+            if not bid or not model or bid in incoming:
                 continue
-            seen_ids.add(bid)
-            seen += 1
-            cat_path = _str(r[ci["cat"]], 300)
-            brand = self.get_brand(brand_name(r[ci["brand"]], cat_path))
+            stock, label = _stock(r[ci["stock"]])
+            incoming[bid] = (
+                model, _str(r[ci["name"]], 300), _str(r[ci["type"]], 200), _str(r[ci["cat"]], 300), _str(r[ci["brand"]], 100),
+                _str(r[ci["img"]], 500), _str(r[ci["url"]], 500), _str(r[ci["art"]], 60), _str(r[ci["gtin"]], 40),
+                _str(r[ci["war"]], 60), _num(r[ci["box"]]) or None, _num(r[ci["price"]]), stock, label)
+        wb.close()
+        seen = len(incoming)
+        active_before = Product.objects.filter(is_active=True).count()
+        if active_before > 200 and seen < active_before * 0.5:
+            raise ImportError_(f"В выгрузке {seen} позиций, а на сайте {active_before} — похоже, выгрузка неполная. Ничего не меняю.")
+
+        # 2) сравниваем с базой и пишем только то, что изменилось
+        cmp_fields = ["model", "name", "type", "brand_id", "category_id", "image_url", "barlau_url", "article", "gtin",
+                      "warranty", "box_qty", "base_price", "stock", "stock_label", "is_active"]
+        current = {row[0]: row[1:] for row in Product.objects.values_list("barlau_id", "pk", *cmp_fields).iterator(chunk_size=2000)}
+        used_slugs = set(Product.objects.values_list("slug", flat=True))
+        now = timezone.now()
+        new_batch, upd_batch = [], []
+        st = dict(created=0, updated=0, price_up=0, price_down=0, out=0, back=0)
+
+        def flush():
+            nonlocal new_batch, upd_batch
+            with transaction.atomic():
+                if new_batch:
+                    Product.objects.bulk_create(new_batch); st["created"] += len(new_batch)
+                if upd_batch:
+                    Product.objects.bulk_update(upd_batch, UPDATE_FIELDS); st["updated"] += len(upd_batch)
+            new_batch, upd_batch = [], []
+
+        for bid, (model, name, typ, cat_path, braw, img, url, art, gtin, war, box, price, stock, label) in incoming.items():
+            brand = self.get_brand(brand_name(braw, cat_path))
             parts = [p.strip() for p in cat_path.split(">")]
             cat = self.get_cat(brand, parts[1] if len(parts) > 1 else "")
-            stock, label = _stock(r[ci["stock"]])
-            box = _num(r[ci["box"]])
-            data = dict(
-                model=model, name=_str(r[ci["name"]], 300), type=_str(r[ci["type"]], 200), brand=brand, category=cat,
-                image_url=_str(r[ci["img"]], 500), barlau_url=_str(r[ci["url"]], 500), article=_str(r[ci["art"]], 60),
-                gtin=_str(r[ci["gtin"]], 40), warranty=_str(r[ci["war"]], 60), box_qty=box or None,
-                base_price=_num(r[ci["price"]]), stock=stock, stock_label=label, is_active=True, last_seen=now)
-            if bid in existing:
-                upd_batch.append(Product(pk=existing[bid], barlau_id=bid, **data))
+            vals = (model, name, typ, brand.pk, cat.pk if cat else None, img, url, art, gtin, war, box, price, stock, label, True)
+            old = current.get(bid)
+            if old is not None and old[1:] == vals:
+                continue  # ничего не поменялось
+            data = dict(model=model, name=name, type=typ, brand=brand, category=cat, image_url=img, barlau_url=url,
+                        article=art, gtin=gtin, warranty=war, box_qty=box, base_price=price, stock=stock,
+                        stock_label=label, is_active=True, last_seen=now)
+            if old is not None:
+                old_price, old_stock = old[12], old[13]
+                if price > old_price:
+                    st["price_up"] += 1
+                elif price < old_price:
+                    st["price_down"] += 1
+                if old_stock > 0 and stock == 0:
+                    st["out"] += 1
+                elif old_stock == 0 and stock > 0:
+                    st["back"] += 1
+                upd_batch.append(Product(pk=old[0], barlau_id=bid, **data))
             else:
                 slug = make_slug(model)
                 if slug in used_slugs:
@@ -176,16 +198,20 @@ class Importer:
                 new_batch.append(Product(barlau_id=bid, slug=slug, **data))
             if len(new_batch) + len(upd_batch) >= BATCH:
                 flush()
-        wb.close()
-
-        if active_before > 200 and seen < active_before * 0.5:
-            raise ImportError_(f"В выгрузке {seen} позиций, а на сайте {active_before} — похоже, выгрузка неполная. Ничего не меняю.")
         flush()
-        # чего не было в этой выгрузке — снимаем с сайта (по отметке времени, без списка из 10 000 id)
-        from django.db.models import Q
-        deactivated = Product.objects.filter(is_active=True).filter(Q(last_seen__lt=now) | Q(last_seen__isnull=True)).update(is_active=False)
-        self.run.total, self.run.created_count, self.run.updated_count, self.run.deactivated_count = seen, created, updated, deactivated
-        self.note(f"Excel: позиций {seen}, новых {created}, обновлено {updated}, пропало из выгрузки {deactivated}")
+
+        # 3) чего нет в выгрузке — снимаем с сайта (не удаляем)
+        gone = [row[0] for bid, row in current.items() if row[15] and bid not in incoming]
+        deactivated = 0
+        for i in range(0, len(gone), 1000):
+            deactivated += Product.objects.filter(pk__in=gone[i:i + 1000]).update(is_active=False)
+
+        r = self.run
+        r.total, r.created_count, r.updated_count, r.deactivated_count = seen, st["created"], st["updated"], deactivated
+        r.price_up, r.price_down, r.out_of_stock, r.back_in_stock = st["price_up"], st["price_down"], st["out"], st["back"]
+        self.note(f"Excel: позиций {seen}; новых {st['created']}, изменилось {st['updated']} "
+                  f"(подорожало {st['price_up']}, подешевело {st['price_down']}, закончилось {st['out']}, "
+                  f"снова в наличии {st['back']}), пропало из выгрузки {deactivated}")
 
     # --- YML ---
     def sync_nodes(self, cats, parents, order):
@@ -220,6 +246,8 @@ class Importer:
     def import_yml(self, path):
         cats, parents, order = {}, {}, {}
         ids = dict(Product.objects.values_list("barlau_id", "pk"))
+        cur = {pk: (d, sp, n) for pk, d, sp, n in Product.objects.values_list("pk", "description", "subpath", "node_id").iterator(chunk_size=2000)}
+        changed = 0
         node_ids = None
         batch, described = [], 0
 
@@ -254,9 +282,11 @@ class Importer:
                     desc = re.sub(r"[ \t]+", " ", desc)
                     cid = _num(el.findtext("categoryId"))
                     sub = " › ".join(path_of(cid)[2:])[:300]
-                    batch.append(Product(pk=pk, description=desc, subpath=sub, node_id=node_ids.get(cid)))
+                    nid = node_ids.get(cid)
                     if desc:
                         described += 1
+                    if cur.get(pk) != (desc, sub, nid):
+                        batch.append(Product(pk=pk, description=desc, subpath=sub, node_id=nid)); changed += 1
                     if len(batch) >= BATCH:
                         flush()
                 el.clear()
@@ -264,37 +294,71 @@ class Importer:
             self.sync_nodes(cats, parents, order)
         flush()
         self.run.described_count = described
-        self.note(f"YML: категорий {len(cats)}, описаний {described}")
+        self.note(f"YML: категорий {len(cats)}, описаний {described}, изменилось {changed}")
 
 
-def run_import(source="cron", excel_file=None, yml_file=None):
-    """Полная загрузка. Возвращает ImportRun. Ошибки пишет в журнал, не падает."""
+def _sha(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(256 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def is_due(s):
+    """Пора ли проверять выгрузку по расписанию из админки."""
+    if s.import_requested or not s.last_check:
+        return True
+    return timezone.now() - s.last_check >= timedelta(minutes=max(s.import_interval, 10) - 2)
+
+
+def run_import(source="cron", excel_file=None, yml_file=None, force=False):
+    """Загрузка. Если выгрузки не менялись с прошлого раза — ничего не делает и возвращает None.
+    Иначе — ImportRun с журналом. Ошибки пишет в журнал, не падает."""
     s = SiteSettings.get()
-    run = ImportRun.objects.create(source=source)
-    imp = Importer(run)
     tmp = Path(dj.SM_DATA_DIR) / "import"
+    run, imp = None, None
     try:
         xlsx = Path(excel_file) if excel_file else download(s.excel_url, tmp / "barlau.xlsx")
-        imp.note(f"Excel получен: {xlsx.stat().st_size // 1024} КБ")
-        imp.import_excel(xlsx)
         try:
             yml = Path(yml_file) if yml_file else download(s.yml_url, tmp / "barlau.xml")
+        except Exception as e:
+            yml, yml_err = None, e
+        xh, yh = _sha(xlsx), (_sha(yml) if yml else "")
+        SiteSettings.objects.filter(pk=s.pk).update(last_check=timezone.now())
+        if not force and not excel_file and xh == s.excel_hash and (not yml or yh == s.yml_hash):
+            SiteSettings.objects.filter(pk=s.pk).update(import_requested=False)
+            return None  # выгрузка та же — база не трогается
+
+        run = ImportRun.objects.create(source=source)
+        imp = Importer(run)
+        imp.note(f"Excel получен: {xlsx.stat().st_size // 1024} КБ")
+        imp.import_excel(xlsx)
+        if yml:
             imp.note(f"YML получен: {yml.stat().st_size // 1024} КБ")
-            imp.import_yml(yml)
-        except Exception as e:  # описания — не главное, цены уже обновлены
-            imp.note(f"YML не загружен: {e}")
+            try:
+                imp.import_yml(yml)
+            except Exception as e:  # описания — не главное, цены уже обновлены
+                imp.note(f"YML не разобран: {e}"); yh = ""
+        else:
+            imp.note(f"YML не загружен: {yml_err}")
         recalc_prices()
         imp.note("Цены пересчитаны")
         run.status = "ok"
+        SiteSettings.objects.filter(pk=s.pk).update(excel_hash=xh, yml_hash=yh)
     except Exception as e:
+        log.exception("Импорт каталога не удался")
+        if run is None:
+            run = ImportRun.objects.create(source=source)
+            imp = Importer(run)
         run.status = "error"
         imp.note(f"ОШИБКА: {e}")
-        log.exception("Импорт каталога не удался")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-        run.finished = timezone.now()
-        run.log = "\n".join(imp.lines)
-        run.save()
-        SiteSettings.objects.filter(pk=1).update(import_requested=False)
+        SiteSettings.objects.filter(pk=s.pk).update(import_requested=False)
+        if run is not None:
+            run.finished = timezone.now()
+            run.log = "\n".join(imp.lines)
+            run.save()
         ImportRun.objects.filter(started__lt=timezone.now() - timedelta(days=60)).delete()
     return run

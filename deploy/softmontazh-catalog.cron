@@ -1,9 +1,10 @@
-# Софтмонтаж — каталог Barlau. Ставится deploy/catalog-install.sh в /etc/cron.d/softmontazh-catalog. Время — UTC.
+# Софтмонтаж — каталог Barlau. Ставится deploy/catalog-install.sh / update.sh в /etc/cron.d/softmontazh-catalog. Время — UTC.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-# загрузка из Barlau каждые 6 часов (в 17 минут — не совпадает с задачами платформы)
-17 */6 * * * softmontazh nice -n 10 /usr/local/bin/softmontazh-manage import_barlau > /opt/softmontazh/import-last.log 2>&1
-# кнопка «Обновить из Barlau сейчас» в админке — проверка каждые 10 минут
-*/10 * * * * softmontazh nice -n 10 /usr/local/bin/softmontazh-manage import_barlau --if-requested >> /opt/softmontazh/import-last.log 2>&1
+# каждые 10 минут: пора ли по частоте из админки (Настройки каталога → «Как часто проверять») или нажата «Обновить сейчас».
+# Если выгрузка не изменилась — база не трогается. flock — чтобы две загрузки не шли одновременно.
+*/10 * * * * softmontazh flock -n /opt/softmontazh/import.lock nice -n 10 /usr/local/bin/softmontazh-manage import_barlau --auto >> /opt/softmontazh/import.log 2>&1
+# раз в неделю обрезаем журнал
+5 0 * * 1 softmontazh tail -n 2000 /opt/softmontazh/import.log > /opt/softmontazh/import.log.tmp 2>/dev/null && mv /opt/softmontazh/import.log.tmp /opt/softmontazh/import.log
 # ночной бэкап базы каталога, храним 7 штук
 40 22 * * * softmontazh pg_dump -Fc softmontazh > /opt/softmontazh/backups/catalog-$(date +\%F).dump && ls -1t /opt/softmontazh/backups/catalog-*.dump | tail -n +8 | xargs -r rm -f
