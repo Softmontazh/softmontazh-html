@@ -1,4 +1,5 @@
 """Каталог оборудования: данные из выгрузок дистрибьютора Barlau (b2b.barlau.kz)."""
+import math
 from decimal import Decimal
 
 from django.db import models
@@ -23,6 +24,10 @@ class SiteSettings(models.Model):
     """Общие настройки каталога. Одна запись."""
     markup_percent = models.DecimalField("Наценка к рознице Barlau, %", max_digits=6, decimal_places=2, default=Decimal("0"),
         help_text="Для всех товаров. Можно задать отдельно для бренда или раздела. Отрицательное число — скидка.")
+    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, default=Decimal("10"),
+        help_text="Общее правило; у бренда, раздела или подраздела можно задать своё.")
+    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, default=Decimal("10"),
+        help_text="Общее правило; у бренда, раздела или подраздела можно задать своё.")
     round_to = models.PositiveIntegerField("Округлять цену до, ₸", default=1, choices=[(1, "1 ₸"), (10, "10 ₸"), (100, "100 ₸")])
     show_without_price = models.BooleanField("Показывать товары без цены («Цена по запросу»)", default=True)
     show_out_of_stock = models.BooleanField("Показывать товары не в наличии («Под заказ»)", default=True)
@@ -92,6 +97,10 @@ class Brand(models.Model):
         help_text="Пусто — как в общих настройках.")
     purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
         help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
+    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Ниже «закупка + эта наценка» менеджер продать не может. Пусто — как у уровня выше.")
+    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Доля менеджера от прибыли сделки (цена продажи − закупка). Пусто — как у уровня выше.")
 
     class Meta:
         ordering = ["sort", "name"]
@@ -111,6 +120,10 @@ class Category(models.Model):
         help_text="Пусто — как у бренда.")
     purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
         help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
+    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Ниже «закупка + эта наценка» менеджер продать не может. Пусто — как у уровня выше.")
+    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Доля менеджера от прибыли сделки (цена продажи − закупка). Пусто — как у уровня выше.")
 
     class Meta:
         ordering = ["brand__sort", "brand__name", "sort", "name"]
@@ -131,6 +144,10 @@ class Node(models.Model):
     sort = models.PositiveIntegerField("Порядок", default=0)
     purchase_discount = models.DecimalField("Моя закупка: скидка от розницы, %", max_digits=5, decimal_places=2, null=True, blank=True,
         help_text="Скидка, которую вы видите в B2B Barlau. Пусто — как у уровня выше. Покупатели не видят.")
+    min_markup_percent = models.DecimalField("Пол для менеджера: мин. наценка на закупку, %", max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text="Ниже «закупка + эта наценка» менеджер продать не может. Пусто — как у уровня выше.")
+    manager_commission_percent = models.DecimalField("Менеджеру: % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Доля менеджера от прибыли сделки (цена продажи − закупка). Пусто — как у уровня выше.")
 
     class Meta:
         ordering = ["sort"]
@@ -184,6 +201,12 @@ class Product(models.Model):
         help_text="Если знаете точную закупочную цену этого товара — впишите, она важнее скидок разделов.")
     purchase_price = models.PositiveIntegerField("Закупка, ₸ (расчёт)", null=True, blank=True, editable=False)
     purchase_source = models.CharField("Откуда закупка", max_length=200, blank=True, editable=False)
+    floor_override = models.PositiveIntegerField("Свой пол для менеджера, ₸", null=True, blank=True,
+        help_text="Если задан — важнее расчёта по наценке.")
+    floor_price = models.PositiveIntegerField("Пол для менеджера, ₸", null=True, blank=True, editable=False,
+        help_text="Минимальная цена продажи. Пусто — уступать нельзя, только по рознице.")
+    floor_source = models.CharField("Откуда пол", max_length=200, blank=True, editable=False)
+    commission_percent = models.DecimalField("Менеджеру, % от прибыли", max_digits=5, decimal_places=2, null=True, blank=True, editable=False)
 
     created = models.DateTimeField("Добавлен", auto_now_add=True)
     updated = models.DateTimeField("Изменён", auto_now=True)
@@ -228,48 +251,76 @@ def calc_price(base, settings, brand=None, category=None, override=None):
     return max(int((val / r).to_integral_value()) * r, 0)
 
 
-def purchase_for(p, brand, cat, nodes_by_pk, nodes_by_bid):
-    """Закупка: своя цена товара → ближайший узел дерева со скидкой → раздел → бренд. Возвращает (цена|None, откуда)."""
-    if p.purchase_override:
-        return int(p.purchase_override), "указана у товара"
-    if not p.base_price:
-        return None, ""
-    disc, src = None, ""
+def resolve(field, p, brand, cat, nodes_by_pk, nodes_by_bid, settings=None):
+    """Ближайшее заданное значение правила: подраздел дерева → … → раздел → бренд → общие настройки.
+    Возвращает (значение|None, откуда)."""
     n = nodes_by_pk.get(p.node_id)
     if n is not None:
         for bid in reversed([int(x) for x in n.path.strip("/").split("/") if x.isdigit()]):
             nn = nodes_by_bid.get(bid)
-            if nn is not None and nn.purchase_discount is not None:
-                disc, src = nn.purchase_discount, f"раздел «{nn.name}»"
-                break
-    if disc is None and cat is not None and cat.purchase_discount is not None:
-        disc, src = cat.purchase_discount, f"раздел «{cat.name}»"
-    if disc is None and brand is not None and brand.purchase_discount is not None:
-        disc, src = brand.purchase_discount, f"бренд {brand.name}"
+            if nn is not None and getattr(nn, field) is not None:
+                return getattr(nn, field), f"раздел «{nn.name}»"
+    if cat is not None and getattr(cat, field) is not None:
+        return getattr(cat, field), f"раздел «{cat.name}»"
+    if brand is not None and getattr(brand, field) is not None:
+        return getattr(brand, field), f"бренд {brand.name}"
+    if settings is not None and getattr(settings, field, None) is not None:
+        return getattr(settings, field), "общие настройки"
+    return None, ""
+
+
+def _pct(d):
+    return f"{d.normalize():f}"
+
+
+def purchase_for(p, brand, cat, nodes_by_pk, nodes_by_bid):
+    """Закупка: своя цена товара → скидка ближайшего уровня от розницы Barlau."""
+    if p.purchase_override:
+        return int(p.purchase_override), "указана у товара"
+    if not p.base_price:
+        return None, ""
+    disc, src = resolve("purchase_discount", p, brand, cat, nodes_by_pk, nodes_by_bid)
     if disc is None:
         return None, ""
     val = Decimal(p.base_price) * (Decimal(100) - disc) / Decimal(100)
-    return int(val.to_integral_value()), f"−{disc.normalize():f}% · {src}"
+    return int(val.to_integral_value()), f"−{_pct(disc)}% · {src}"
+
+
+def floor_for(p, purchase, price, brand, cat, nodes_by_pk, nodes_by_bid, settings):
+    """Пол для менеджера: свой пол товара → закупка + мин. наценка ближайшего уровня. Не выше цены на сайте."""
+    if p.floor_override:
+        return min(int(p.floor_override), price or int(p.floor_override)), "указан у товара"
+    if not purchase or not price:
+        return None, ""
+    mk, src = resolve("min_markup_percent", p, brand, cat, nodes_by_pk, nodes_by_bid, settings)
+    val = Decimal(purchase) * (Decimal(100) + (mk or 0)) / Decimal(100)
+    r = settings.round_to or 1
+    fl = math.ceil(val / r) * r  # вверх до шага округления
+    return min(fl, price), f"закупка +{_pct(mk or Decimal(0))}% · {src}"
 
 
 def recalc_prices(products=None):
-    """Пересчитать цену на сайте и закупку (после смены наценки/скидок или импорта)."""
+    """Пересчитать цену на сайте, закупку, пол и % менеджера (после смены правил или импорта)."""
     s = SiteSettings.get()
     brands = {b.pk: b for b in Brand.objects.all()}
     cats = {c.pk: c for c in Category.objects.all()}
-    nodes = list(Node.objects.only("pk", "barlau_id", "name", "path", "purchase_discount"))
+    nodes = list(Node.objects.only("pk", "barlau_id", "name", "path", "purchase_discount", "min_markup_percent", "manager_commission_percent"))
     nodes_by_pk = {n.pk: n for n in nodes}
     nodes_by_bid = {n.barlau_id: n for n in nodes}
     qs = products if products is not None else Product.objects.all()
-    fields = ["price", "purchase_price", "purchase_source"]
+    fields = ["price", "purchase_price", "purchase_source", "floor_price", "floor_source", "commission_percent"]
     batch = []
-    for p in qs.only("pk", "base_price", "price", "price_override", "purchase_override", "purchase_price",
-                     "purchase_source", "brand_id", "category_id", "node_id").iterator(chunk_size=1000):
+    for p in qs.only("pk", "base_price", "price", "price_override", "purchase_override", "purchase_price", "purchase_source",
+                     "floor_override", "floor_price", "floor_source", "commission_percent",
+                     "brand_id", "category_id", "node_id").iterator(chunk_size=1000):
         b, c = brands.get(p.brand_id), cats.get(p.category_id)
         new = calc_price(p.base_price, s, b, c, p.price_override)
-        pp, src = purchase_for(p, b, c, nodes_by_pk, nodes_by_bid)
-        if (new, pp, src) != (p.price, p.purchase_price, p.purchase_source):
-            p.price, p.purchase_price, p.purchase_source = new, pp, src
+        pp, psrc = purchase_for(p, b, c, nodes_by_pk, nodes_by_bid)
+        fl, fsrc = floor_for(p, pp, new, b, c, nodes_by_pk, nodes_by_bid, s)
+        com, _ = resolve("manager_commission_percent", p, b, c, nodes_by_pk, nodes_by_bid, s)
+        vals = (new, pp, psrc, fl, fsrc, com)
+        if vals != (p.price, p.purchase_price, p.purchase_source, p.floor_price, p.floor_source, p.commission_percent):
+            p.price, p.purchase_price, p.purchase_source, p.floor_price, p.floor_source, p.commission_percent = vals
             batch.append(p)
         if len(batch) >= 500:
             Product.objects.bulk_update(batch, fields); batch = []
